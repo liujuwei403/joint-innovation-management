@@ -7,27 +7,29 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  .page-header { margin-bottom: 20px; animation: fadeSlideUp 0.5s ease; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-  .page-left .page-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
-  .page-left .page-desc { color: var(--text-secondary); font-size: 14px; }
+  .page-header { margin-bottom: 14px; animation: fadeSlideUp 0.5s ease; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .page-left .page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 2px; }
+  .page-left .page-desc { color: var(--text-secondary); font-size: 13px; }
+
+  .wish-container { display: flex; flex-direction: column; height: calc(100vh - 56px); padding: 16px 24px; overflow: hidden; position: relative; z-index: 1; }
 
   .stats-row {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-    margin-bottom: 20px; animation: fadeSlideUp 0.55s ease;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    margin-bottom: 14px; animation: fadeSlideUp 0.55s ease; flex-shrink: 0;
   }
   .mini-stat {
     background: var(--bg-card); border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md); padding: 16px; text-align: center;
+    border-radius: var(--radius-md); padding: 12px; text-align: center;
   }
-  .mini-stat-num { font-size: 24px; font-weight: 800; color: var(--accent-light); }
+  .mini-stat-num { font-size: 20px; font-weight: 800; color: var(--accent-light); }
   .mini-stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-  /* Wish pool container */
+  /* Wish pool container — fills remaining space */
   .wish-pool {
-    position: relative; min-height: 500px; overflow: hidden;
+    position: relative; flex: 1; min-height: 0; overflow: hidden;
     background: radial-gradient(ellipse at 50% 80%, rgba(127,90,240,0.06) 0%, transparent 70%);
     border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
-    margin-bottom: 28px; animation: fadeSlideUp 0.6s ease;
+    animation: fadeSlideUp 0.6s ease;
   }
   .wish-pool-empty {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -72,9 +74,15 @@
     75% { transform: translate(var(--dx3), var(--dy3)); }
   }
 
-  /* Pending list */
-  .pending-section { animation: fadeSlideUp 0.7s ease; }
-  .pending-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+  /* Pending list — overlay at bottom of pool */
+  .pending-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
+    background: rgba(15,14,23,0.85); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--glass-border);
+    padding: 12px 16px; border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    animation: fadeSlideUp 0.3s ease;
+  }
+  .pending-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
   .pending-card {
     background: var(--bg-card); border: 1px solid var(--glass-border);
     border-radius: var(--radius-md); padding: 16px; margin-bottom: 10px;
@@ -96,7 +104,6 @@
 
   @media (max-width: 640px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .wish-pool { min-height: 350px; }
   }
 </style>
 </head>
@@ -124,7 +131,7 @@
   </div>
 </div>
 
-<div class="container">
+<div class="wish-container">
   <div class="page-header">
     <div class="page-left">
       <div class="page-title">许愿池</div>
@@ -137,11 +144,11 @@
 
   <div class="wish-pool" id="wish-pool">
     <div class="wish-pool-empty" id="pool-empty">许愿池空空如也，快来许个愿望吧</div>
-  </div>
-
-  <div class="pending-section" id="pending-section" style="display:none">
-    <div class="pending-title" id="pending-title"></div>
-    <div id="pending-list"></div>
+    <!-- 待审核列表浮在池底部 -->
+    <div class="pending-overlay" id="pending-section" style="display:none">
+      <div class="pending-title" id="pending-title"></div>
+      <div id="pending-list" style="max-height:120px;overflow-y:auto"></div>
+    </div>
   </div>
 </div>
 
@@ -217,12 +224,9 @@ function renderPool() {
   // 清除旧气泡
   pool.querySelectorAll('.wish-bubble').forEach(el => el.remove());
 
-  // 飘动的愿望：已通过 + 已领取 + (已完成且显示=是)
+  // 飘动的愿望：显示=是 的所有愿望（由管理员控制）
   const floating = allWishes.filter(w => {
-    const s = w.fields['状态'];
-    if (s === '已通过' || s === '已领取') return true;
-    if (s === '已完成' && w.fields['显示'] === '是') return true;
-    return false;
+    return w.fields['显示'] === '是';
   });
 
   document.getElementById('pool-empty').style.display = floating.length === 0 ? '' : 'none';
@@ -379,8 +383,8 @@ async function submitWish() {
 
 // ─── Actions ───────────────────────────────────────────────
 async function approveWish(id) {
-  await teableUpdate(TABLE_WISH, id, { '状态': '已通过' });
-  toast('已通过'); loadWishes();
+  await teableUpdate(TABLE_WISH, id, { '状态': '已通过', '显示': '是' });
+  toast('已通过，已加入许愿池'); loadWishes();
 }
 async function rejectWish(id) {
   if (!confirm('确定拒绝？')) return;

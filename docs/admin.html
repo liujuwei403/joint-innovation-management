@@ -103,6 +103,7 @@
     <button class="admin-tab" onclick="switchAdminTab('awards',this)">🎖️ 授予勋章</button>
     <button class="admin-tab" onclick="switchAdminTab('members',this)">👁️ 全员勋章</button>
     <button class="admin-tab" onclick="switchAdminTab('achievement',this)">🏆 成就配置</button>
+    <button class="admin-tab" onclick="switchAdminTab('wishes',this)">🌟 许愿管理</button>
     <button class="admin-tab" onclick="switchAdminTab('calendar',this)">📅 日历订阅</button>
   </div>
 
@@ -144,6 +145,11 @@
     </div>
     <h3 style="font-size:16px;font-weight:700;margin-bottom:14px">勋章图片</h3>
     <div id="ach-img-grid" style="overflow-x:auto"></div>
+  </div>
+
+  <div id="panel-wishes" class="tab-panel">
+    <div id="wishes-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px"></div>
+    <div class="table-wrap" id="wishes-content"></div>
   </div>
 
   <div id="panel-calendar" class="tab-panel">
@@ -212,6 +218,7 @@
 const user = getCurrentUser();
 if (!user || user.role !== '管理员') { alert('需要管理员权限'); window.location.href = 'home.html'; }
 document.getElementById('nav-user').textContent = user.nickname;
+document.getElementById('admin-tab').style.display = 'flex';
 
 let allUsers = [], allBadges = [], allAwards = [];
 
@@ -249,7 +256,7 @@ async function loadAll() {
       .sort((a, b) => (a.fields['等级']||0) - (b.fields['等级']||0))
       .map(t => ({ level: t.fields['等级'], name: t.fields['名称'], threshold: t.fields['阈值'], cls: TIER_CLS_MAP[t.fields['等级']] || 'tier-xinrui', stars: t.fields['等级'] }));
   }
-  renderUsers(); renderBadges(); renderAwards(); renderMembersView(); renderCalendarStats(); renderAchConfig();
+  renderUsers(); renderBadges(); renderAwards(); renderMembersView(); renderWishesAdmin(); renderCalendarStats(); renderAchConfig();
 }
 loadAll();
 
@@ -549,6 +556,93 @@ function sortMembers(sortBy, el) {
   }).join('');
 
   document.getElementById('members-content').innerHTML = html;
+}
+
+// ─── Wishes Admin ──────────────────────────────────────────
+function renderWishesAdmin() {
+  const userMap = {};
+  allUsers.forEach(u => { userMap[u.fields['账号']] = u.fields['昵称']; });
+
+  const total = allWishes.filter(w => w.fields['状态'] !== '已撤回').length;
+  const pending = allWishes.filter(w => w.fields['状态'] === '待审核').length;
+  const approved = allWishes.filter(w => w.fields['状态'] === '已通过').length;
+  const claimed = allWishes.filter(w => w.fields['状态'] === '已领取').length;
+  const done = allWishes.filter(w => w.fields['状态'] === '已完成').length;
+
+  document.getElementById('wishes-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${total}</div><div class="stat-label">总愿望</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px;color:var(--warning)">${pending}</div><div class="stat-label">待审核</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${approved}</div><div class="stat-label">待认领</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${claimed}</div><div class="stat-label">进行中</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px;color:var(--success)">${done}</div><div class="stat-label">已完成</div></div>
+  `;
+
+  const wishes = [...allWishes]
+    .filter(w => w.fields['状态'] !== '已撤回')
+    .sort((a, b) => {
+      const order = { '待审核': 0, '已通过': 1, '已领取': 2, '已完成': 3, '已拒绝': 4 };
+      return (order[a.fields['状态']]??9) - (order[b.fields['状态']]??9);
+    });
+
+  if (wishes.length === 0) {
+    document.getElementById('wishes-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🌟</div><p>暂无愿望</p></div>';
+    return;
+  }
+
+  const statusStyle = { '待审核': 'status-pending', '已通过': 'status-active', '已领取': 'status-active', '已完成': 'status-active', '已拒绝': 'status-disabled' };
+
+  document.getElementById('wishes-content').innerHTML = `<table class="data-table">
+    <thead><tr><th>标题</th><th>提交者</th><th>状态</th><th>领取者</th><th>提交时间</th><th>显示</th><th>操作</th></tr></thead>
+    <tbody>${wishes.map(w => {
+      const f = w.fields;
+      const submitter = userMap[f['提交者']] || f['提交者'] || '-';
+      const claimer = f['领取者'] ? (userMap[f['领取者']] || f['领取者']) : '-';
+      const date = (f['提交时间']||'').slice(0, 10);
+      const isShown = f['显示'] === '是';
+      const showTag = isShown ? '<span style="color:var(--success)">是</span>' : '<span style="color:var(--text-muted)">否</span>';
+      let actions = '';
+      // 待审核：通过/拒绝
+      if (f['状态'] === '待审核') {
+        actions += `<button class="btn-sm btn-success-sm" onclick="adminApproveWish('${w.id}')">通过</button>
+                    <button class="btn-sm btn-danger-sm" onclick="adminRejectWish('${w.id}')">拒绝</button>`;
+      }
+      // 所有非待审核状态：显示/隐藏切换
+      if (f['状态'] !== '待审核') {
+        const toggleVal = isShown ? '否' : '是';
+        const toggleText = isShown ? '隐藏' : '显示';
+        actions += `<button class="btn-sm btn-ghost" onclick="adminToggleShow('${w.id}','${toggleVal}')">${toggleText}</button>`;
+      }
+      // 所有愿望：删除
+      actions += `<button class="btn-sm btn-danger-sm" onclick="adminDeleteWish('${w.id}','${(f['标题']||'').replace(/'/g,'')}')">删除</button>`;
+      return `<tr>
+        <td><b>${f['标题']||'-'}</b></td>
+        <td>${submitter}</td>
+        <td><span class="status ${statusStyle[f['状态']]||''}">${f['状态']}</span></td>
+        <td style="color:var(--text-secondary)">${claimer}</td>
+        <td style="color:var(--text-muted)">${date}</td>
+        <td>${showTag}</td>
+        <td class="actions-cell">${actions}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+async function adminApproveWish(id) {
+  await teableUpdate(TABLE_WISH, id, { '状态': '已通过', '显示': '是' });
+  toast('已通过，已加入许愿池'); loadAll();
+}
+async function adminRejectWish(id) {
+  if (!confirm('确定拒绝？')) return;
+  await teableUpdate(TABLE_WISH, id, { '状态': '已拒绝' });
+  toast('已拒绝'); loadAll();
+}
+async function adminToggleShow(id, val) {
+  await teableUpdate(TABLE_WISH, id, { '显示': val });
+  toast(val === '是' ? '已设为显示' : '已隐藏'); loadAll();
+}
+async function adminDeleteWish(id, title) {
+  if (!confirm('确定删除愿望「' + title + '」？')) return;
+  try { await teableDelete(TABLE_WISH, id); toast('已删除'); loadAll(); }
+  catch(e) { toast('删除失败', 'error'); }
 }
 
 // ─── Calendar Subscription Stats ────────────────────────────
