@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>共创日历 · AI勋章</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; animation: fadeSlideUp 0.5s ease; flex-wrap: wrap; gap: 12px; }
+  .page-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  .page-desc { color: var(--text-secondary); font-size: 14px; }
+
+  /* Month nav */
+  .month-nav {
+    display: flex; align-items: center; gap: 16px;
+    animation: fadeSlideUp 0.55s ease; margin-bottom: 20px;
+  }
+  .month-label { font-size: 18px; font-weight: 700; min-width: 140px; text-align: center; }
+  .month-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--glass-border);
+    background: var(--bg-card); color: var(--text); font-size: 16px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; font-family: inherit;
+  }
+  .month-btn:hover { background: var(--bg-card-hover); border-color: var(--accent); color: var(--accent-light); }
+
+  /* View toggle */
+  .view-toggle { display: flex; gap: 4px; }
+
+  /* Calendar grid */
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    margin-bottom: 28px; animation: fadeSlideUp 0.6s ease;
+  }
+  .cal-header {
+    padding: 8px 4px; text-align: center; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .cal-day {
+    min-height: 80px; padding: 6px; border-radius: var(--radius-sm);
+    background: var(--bg-card); border: 1px solid transparent;
+    transition: all 0.2s; position: relative;
+  }
+  .cal-day:hover { border-color: var(--glass-border); }
+  .cal-day.other-month { opacity: 0.3; }
+  .cal-day.today { border-color: var(--accent); background: rgba(127,90,240,0.08); }
+  .cal-day-num { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+  .cal-day.today .cal-day-num { color: var(--accent-light); }
+  .cal-dot {
+    width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin: 1px;
+  }
+  .cal-event-mini {
+    font-size: 10px; padding: 2px 4px; border-radius: 3px; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .cal-event-mini:hover { opacity: 0.8; }
+
+  /* Event list */
+  .event-list { display: flex; flex-direction: column; gap: 14px; animation: fadeSlideUp 0.65s ease; }
+  .event-card {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl); padding: 24px;
+    transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .event-card:hover { background: var(--bg-card-hover); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .event-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
+    background: var(--event-color, var(--accent)); border-radius: 4px 0 0 4px;
+  }
+
+  .event-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+  .event-date-box {
+    width: 52px; flex-shrink: 0; text-align: center;
+    background: rgba(127,90,240,0.1); border-radius: var(--radius-md); padding: 8px 4px;
+    border: 1px solid rgba(127,90,240,0.15);
+  }
+  .event-date-month { font-size: 10px; font-weight: 600; color: var(--accent-light); text-transform: uppercase; }
+  .event-date-day { font-size: 22px; font-weight: 800; color: var(--accent-light); line-height: 1; }
+  .event-date-weekday { font-size: 10px; color: var(--text-muted); }
+
+  .event-info { flex: 1; min-width: 0; }
+  .event-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .event-time { font-size: 13px; color: var(--accent-light); font-weight: 500; margin-bottom: 6px; }
+  .event-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+  .event-meta-item { display: flex; align-items: center; gap: 4px; }
+  .event-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
+  .event-links { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .event-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 14px; font-size: 12px; font-weight: 500;
+    background: rgba(127,90,240,0.1); color: var(--accent-light);
+    border: 1px solid rgba(127,90,240,0.15); text-decoration: none;
+    transition: all 0.2s;
+  }
+  .event-link:hover { background: rgba(127,90,240,0.2); }
+
+  .event-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .sub-info { font-size: 12px; color: var(--text-muted); }
+  .sub-avatars { display: flex; margin-left: 6px; }
+  .sub-avatar {
+    width: 24px; height: 24px; border-radius: 50%; font-size: 10px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; color: white;
+    margin-left: -6px; border: 2px solid var(--bg);
+  }
+  .sub-btn {
+    padding: 7px 18px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; font-family: inherit; border: none;
+  }
+  .sub-btn.subscribe { background: var(--accent); color: white; box-shadow: 0 2px 10px var(--accent-glow); }
+  .sub-btn.subscribe:hover { background: var(--accent-light); transform: translateY(-1px); }
+  .sub-btn.subscribed { background: rgba(44,182,125,0.15); color: var(--success); border: 1px solid rgba(44,182,125,0.25); }
+  .sub-btn.subscribed:hover { background: rgba(255,107,107,0.1); color: var(--danger); border-color: rgba(255,107,107,0.25); }
+
+  /* Type colors */
+  .type-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+  }
+
+  /* Admin event stats */
+  .event-admin-bar { display: flex; gap: 6px; }
+
+  /* Event status badge */
+  .event-status {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600;
+  }
+  .event-status.status-upcoming { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .event-status.status-ongoing { background: rgba(44,182,125,0.15); color: #2cb67d; animation: pulse-status 2s ease-in-out infinite; }
+  .event-status.status-ended { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  @keyframes pulse-status { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  /* Past event */
+  .event-card.past { opacity: 0.5; }
+  .event-card.past:hover { opacity: 0.7; }
+
+  .section-label { font-size: 14px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; padding-left: 4px; letter-spacing: 0.03em; }
+
+  @media (max-width: 640px) {
+    .cal-day { min-height: 50px; }
+    .cal-event-mini { display: none; }
+    .event-header { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora-bg"></div>
+
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="sidebar-brand-icon">🏅</span><span>集团仓储管理部<br>AI共创</span></div>
+  <div class="sidebar-nav">
+    <a class="sidebar-link" href="home.html"><span class="sidebar-link-icon">🏠</span><span>首页</span></a>
+    <a class="sidebar-link" href="gallery.html"><span class="sidebar-link-icon">🏅</span><span>勋章墙</span></a>
+    <a class="sidebar-link active" href="calendar.html"><span class="sidebar-link-icon">📅</span><span>共创日历</span></a>
+    <a class="sidebar-link" href="achievements.html"><span class="sidebar-link-icon">🏆</span><span>共创成果</span></a>
+    <a class="sidebar-link" href="wishes.html"><span class="sidebar-link-icon">🌟</span><span>许愿池</span></a>
+    <a class="sidebar-link admin-link" href="admin.html" id="admin-tab"><span class="sidebar-link-icon">⚙️</span><span>管理后台</span></a>
+  </div>
+</aside>
+<div class="main-area">
+<div class="topbar">
+  <div class="topbar-right">
+    <span class="topbar-user" id="nav-user"></span>
+    <button class="topbar-btn" onclick="openPwdModal()">改密</button>
+    <button class="topbar-btn" onclick="logout()">退出</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="page-header">
+    <div>
+      <div class="page-title">共创日历</div>
+      <div class="page-desc">团队 AI 学习与分享活动</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="view-toggle">
+        <button class="filter-btn active" onclick="setView('list',this)">列表</button>
+        <button class="filter-btn" onclick="setView('calendar',this)">日历</button>
+      </div>
+      <button class="btn-add" id="btn-add-event" style="display:none;margin:0" onclick="openEventModal()">+ 新建活动</button>
+    </div>
+  </div>
+
+  <!-- Calendar view -->
+  <div id="view-calendar" style="display:none">
+    <div class="month-nav">
+      <button class="month-btn" onclick="changeMonth(-1)">◀</button>
+      <div class="month-label" id="month-label"></div>
+      <button class="month-btn" onclick="changeMonth(1)">▶</button>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
+  </div>
+
+  <!-- List view -->
+  <div id="view-list">
+    <div id="upcoming-label" class="section-label">即将到来</div>
+    <div id="event-list" class="event-list">
+      <div class="skeleton" style="height:140px;border-radius:20px"></div>
+      <div class="skeleton" style="height:140px;border-radius:20px"></div>
+    </div>
+    <div id="past-label" class="section-label" style="margin-top:28px;display:none">已结束</div>
+    <div id="past-list" class="event-list"></div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal" style="width:520px">
+    <h3 id="event-modal-title">新建活动</h3>
+    <input type="hidden" id="e-edit-id">
+    <div class="field"><label>活动标题</label><input id="e-title" type="text" placeholder="如：Claude Code 实战分享"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label>开始时间</label><input id="e-start" type="datetime-local"></div>
+      <div class="field"><label>结束时间</label><input id="e-end" type="datetime-local"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label>活动类型</label>
+        <select id="e-type" style="padding-left:14px">
+          <option value="分享会">分享会</option>
+          <option value="培训">培训</option>
+          <option value="工作坊">工作坊</option>
+          <option value="评审会">评审会</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="field"><label>分享者</label><input id="e-sharer" type="text" placeholder="主讲人姓名"></div>
+    </div>
+    <div class="field"><label>活动内容</label><textarea id="e-content" style="min-height:70px;padding:12px 14px;font-family:inherit;font-size:14px;border-radius:var(--radius-md)" placeholder="活动简介"></textarea></div>
+    <div class="field"><label>地点</label><input id="e-location" type="text" placeholder="线下地点或线上会议室"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label>文档链接</label><input id="e-doc" type="text" placeholder="https://..."></div>
+      <div class="field"><label>录屏链接</label><input id="e-video" type="text" placeholder="https://..."></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-cancel" onclick="closeEventModal()">取消</button>
+      <button class="btn-sm btn-accent" onclick="saveEvent()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const user = getCurrentUser();
+if (!user) window.location.href = 'index.html';
+else {
+  document.getElementById('nav-user').textContent = user.nickname;
+  if (user.role === '管理员') {
+    document.getElementById('admin-tab').style.display = 'flex';
+    document.getElementById('btn-add-event').style.display = '';
+  }
+  loadEvents();
+}
+
+const TYPE_COLORS = {
+  '分享会': { bg: 'rgba(127,90,240,0.15)', color: '#a78bfa', border: 'rgba(127,90,240,0.25)' },
+  '培训': { bg: 'rgba(44,182,125,0.15)', color: '#2cb67d', border: 'rgba(44,182,125,0.25)' },
+  '工作坊': { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: 'rgba(59,130,246,0.25)' },
+  '评审会': { bg: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: 'rgba(251,191,36,0.25)' },
+  '其他': { bg: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', border: 'var(--glass-border)' },
+};
+const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+const AVATAR_COLORS = ['#7f5af0','#2cb67d','#3b82f6','#f59e0b','#ec4899','#06b6d4','#f97316'];
+
+let allEvents = [], allUsers = [];
+let currentView = 'list';
+let viewYear, viewMonth;
+
+function getEventStatus(event) {
+  const now = new Date();
+  const start = new Date(event.fields['开始时间']);
+  const end = event.fields['结束时间'] ? new Date(event.fields['结束时间']) : null;
+  if (now < start) return { label: '未开始', cls: 'status-upcoming', icon: '⏳', ended: false };
+  if (end && now > end) return { label: '已结束', cls: 'status-ended', icon: '', ended: true };
+  if (!end && now > new Date(start.getTime() + 2*3600000)) return { label: '已结束', cls: 'status-ended', icon: '', ended: true };
+  return { label: '进行中', cls: 'status-ongoing', icon: '🔴', ended: false };
+}
+
+async function loadEvents() {
+  try {
+    [allEvents, allUsers] = await Promise.all([teableGet(TABLE_CALENDAR), teableGet(TABLE_USER)]);
+    allEvents.sort((a, b) => (a.fields['开始时间'] || '').localeCompare(b.fields['开始时间'] || ''));
+    renderCurrentView();
+  } catch(e) {
+    document.getElementById('event-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>加载失败，请刷新</p></div>';
+  }
+}
+
+function setView(view, el) {
+  currentView = view;
+  document.querySelectorAll('.view-toggle .filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-list').style.display = view === 'list' ? '' : 'none';
+  document.getElementById('view-calendar').style.display = view === 'calendar' ? '' : 'none';
+  if (view === 'calendar') {
+    const now = new Date();
+    viewYear = now.getFullYear(); viewMonth = now.getMonth();
+    renderCalendar();
+  }
+}
+
+// ─── List View ──────────────────────────────────────────────
+function renderCurrentView() {
+  if (currentView === 'list') renderList();
+  else renderCalendar();
+}
+
+function renderList() {
+  const ongoing = [], upcoming = [], past = [];
+  allEvents.forEach(e => {
+    const s = getEventStatus(e);
+    if (s.label === '进行中') ongoing.push(e);
+    else if (s.label === '未开始') upcoming.push(e);
+    else past.push(e);
+  });
+  past.reverse();
+
+  const active = [...ongoing, ...upcoming];
+  document.getElementById('upcoming-label').textContent = ongoing.length > 0 ? '进行中 & 即将到来' : '即将到来';
+  document.getElementById('event-list').innerHTML = active.length > 0
+    ? active.map(e => renderEventCard(e)).join('')
+    : '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">📅</div><p>暂无即将到来的活动</p></div>';
+
+  if (past.length > 0) {
+    document.getElementById('past-label').style.display = '';
+    document.getElementById('past-list').innerHTML = past.map(e => renderEventCard(e)).join('');
+  } else {
+    document.getElementById('past-label').style.display = 'none';
+    document.getElementById('past-list').innerHTML = '';
+  }
+}
+
+function getSubscribers(event) {
+  const s = event.fields['订阅者'] || '';
+  return s ? s.split(',').filter(Boolean) : [];
+}
+
+function isSubscribed(event) {
+  return getSubscribers(event).includes(user.account);
+}
+
+function renderEventCard(event) {
+  const f = event.fields;
+  const start = new Date(f['开始时间']);
+  const end = f['结束时间'] ? new Date(f['结束时间']) : null;
+  const type = f['活动类型'] || '其他';
+  const tc = TYPE_COLORS[type] || TYPE_COLORS['其他'];
+  const subs = getSubscribers(event);
+  const subbed = subs.includes(user.account);
+  const isAdm = user.role === '管理员';
+  const status = getEventStatus(event);
+  const isPast = status.ended;
+
+  const timeStr = `${fmtTime(start)}${end ? ' - ' + fmtTime(end) : ''}`;
+  const dateStr = `${start.getMonth()+1}月${start.getDate()}日`;
+  const weekday = WEEKDAYS[start.getDay()];
+
+  // Subscriber nicknames
+  const userMap = {};
+  allUsers.forEach(u => { userMap[u.fields['账号']] = u.fields['昵称']; });
+
+  const avatarHtml = subs.slice(0, 5).map((acc, i) => {
+    const name = userMap[acc] || acc;
+    return `<span class="sub-avatar" style="background:${AVATAR_COLORS[i % AVATAR_COLORS.length]};z-index:${5-i}" title="${name}">${name.charAt(0)}</span>`;
+  }).join('') + (subs.length > 5 ? `<span class="sub-avatar" style="background:var(--bg-surface);color:var(--text-muted);z-index:0">+${subs.length-5}</span>` : '');
+
+  return `<div class="event-card ${isPast ? 'past' : ''}" style="--event-color:${tc.color}">
+    <div class="event-header">
+      <div class="event-date-box">
+        <div class="event-date-month">${start.getMonth()+1}月</div>
+        <div class="event-date-day">${start.getDate()}</div>
+        <div class="event-date-weekday">周${weekday}</div>
+      </div>
+      <div class="event-info">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <span class="type-badge" style="background:${tc.bg};color:${tc.color};border:1px solid ${tc.border}">${type}</span>
+          <span class="event-status ${status.cls}">${status.icon} ${status.label}</span>
+          ${isAdm ? `<span class="sub-info">${subs.length} 人订阅</span>` : ''}
+        </div>
+        <div class="event-title">${f['标题'] || '未命名活动'}</div>
+        <div class="event-time">🕐 ${timeStr}</div>
+        <div class="event-meta">
+          ${f['分享者'] ? `<span class="event-meta-item">👤 ${f['分享者']}</span>` : ''}
+          ${f['地点'] ? `<span class="event-meta-item">📍 ${f['地点']}</span>` : ''}
+        </div>
+        ${f['活动内容'] ? `<div class="event-desc">${f['活动内容']}</div>` : ''}
+        <div class="event-links">
+          ${f['文档链接'] ? `<a class="event-link" href="${f['文档链接']}" target="_blank">📄 文档</a>` : ''}
+          ${f['录屏链接'] ? `<a class="event-link" href="${f['录屏链接']}" target="_blank">🎬 录屏</a>` : ''}
+        </div>
+        <div class="event-footer">
+          <div style="display:flex;align-items:center">
+            <div class="sub-avatars">${avatarHtml}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${isAdm ? `<button class="btn-sm btn-ghost" onclick="editEvent('${event.id}')">编辑</button><button class="btn-sm btn-danger-sm" onclick="deleteEvent('${event.id}')">删除</button>` : ''}
+            ${!isPast ? (subbed
+              ? `<button class="sub-btn subscribed" onclick="toggleSub('${event.id}',false)" onmouseenter="this.textContent='取消订阅'" onmouseleave="this.textContent='✓ 已订阅'">✓ 已订阅</button>`
+              : `<button class="sub-btn subscribe" onclick="toggleSub('${event.id}',true)">订阅</button>`
+            ) : '<span style="font-size:12px;color:var(--text-muted)">已结束</span>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function fmtTime(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ─── Calendar View ──────────────────────────────────────────
+function changeMonth(delta) {
+  viewMonth += delta;
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('month-label').textContent = `${viewYear}年${viewMonth+1}月`;
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const prevDays = new Date(viewYear, viewMonth, 0).getDate();
+  const today = new Date();
+
+  // Build event map: day -> events
+  const eventMap = {};
+  allEvents.forEach(e => {
+    const d = new Date(e.fields['开始时间']);
+    if (d.getFullYear() === viewYear && d.getMonth() === viewMonth) {
+      const day = d.getDate();
+      if (!eventMap[day]) eventMap[day] = [];
+      eventMap[day].push(e);
+    }
+  });
+
+  let html = WEEKDAYS.map(w => `<div class="cal-header">周${w}</div>`).join('');
+
+  // Previous month fill
+  for (let i = firstDay - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${prevDays - i}</div></div>`;
+  }
+
+  // Current month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+    const events = eventMap[d] || [];
+    const dots = events.slice(0, 3).map(e => {
+      const tc = TYPE_COLORS[e.fields['活动类型']] || TYPE_COLORS['其他'];
+      return `<div class="cal-event-mini" style="background:${tc.bg};color:${tc.color};font-size:10px" title="${e.fields['标题']}">${e.fields['标题']?.slice(0,6)||''}</div>`;
+    }).join('');
+    html += `<div class="cal-day ${isToday ? 'today' : ''}">
+      <div class="cal-day-num">${d}</div>${dots}
+      ${events.length > 3 ? `<div style="font-size:9px;color:var(--text-muted)">+${events.length-3}</div>` : ''}
+    </div>`;
+  }
+
+  // Next month fill
+  const totalCells = firstDay + daysInMonth;
+  const remaining = (7 - totalCells % 7) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+// ─── Subscribe / Unsubscribe ────────────────────────────────
+async function toggleSub(eventId, subscribe) {
+  const event = allEvents.find(e => e.id === eventId);
+  if (!event) return;
+  let subs = getSubscribers(event);
+  if (subscribe) {
+    if (!subs.includes(user.account)) subs.push(user.account);
+  } else {
+    subs = subs.filter(a => a !== user.account);
+  }
+  try {
+    await teableUpdate(TABLE_CALENDAR, eventId, { '订阅者': subs.join(',') });
+    event.fields['订阅者'] = subs.join(',');
+    renderCurrentView();
+  } catch(e) { alert('操作失败'); }
+}
+
+// ─── Admin: CRUD ────────────────────────────────────────────
+function openEventModal(data) {
+  document.getElementById('e-edit-id').value = data?.id || '';
+  document.getElementById('e-title').value = data?.title || '';
+  document.getElementById('e-start').value = data?.start || '';
+  document.getElementById('e-end').value = data?.end || '';
+  document.getElementById('e-type').value = data?.type || '分享会';
+  document.getElementById('e-sharer').value = data?.sharer || '';
+  document.getElementById('e-content').value = data?.content || '';
+  document.getElementById('e-location').value = data?.location || '';
+  document.getElementById('e-doc').value = data?.doc || '';
+  document.getElementById('e-video').value = data?.video || '';
+  document.getElementById('event-modal-title').textContent = data ? '编辑活动' : '新建活动';
+  document.getElementById('event-modal').classList.add('show');
+}
+function closeEventModal() { document.getElementById('event-modal').classList.remove('show'); }
+
+function editEvent(id) {
+  const e = allEvents.find(x => x.id === id);
+  if (!e) return;
+  const f = e.fields;
+  openEventModal({
+    id, title: f['标题'], start: toLocalInput(f['开始时间']), end: toLocalInput(f['结束时间']),
+    type: f['活动类型'], sharer: f['分享者'], content: f['活动内容'],
+    location: f['地点'], doc: f['文档链接'], video: f['录屏链接']
+  });
+}
+
+function toLocalInput(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+async function saveEvent() {
+  const title = document.getElementById('e-title').value.trim();
+  const start = document.getElementById('e-start').value;
+  if (!title || !start) return alert('标题和开始时间必填');
+  const fields = {
+    '标题': title,
+    '开始时间': new Date(start).toISOString(),
+    '结束时间': document.getElementById('e-end').value ? new Date(document.getElementById('e-end').value).toISOString() : '',
+    '活动类型': document.getElementById('e-type').value,
+    '分享者': document.getElementById('e-sharer').value.trim(),
+    '活动内容': document.getElementById('e-content').value.trim(),
+    '地点': document.getElementById('e-location').value.trim(),
+    '文档链接': document.getElementById('e-doc').value.trim(),
+    '录屏链接': document.getElementById('e-video').value.trim(),
+  };
+  const editId = document.getElementById('e-edit-id').value;
+  try {
+    if (editId) {
+      await teableUpdate(TABLE_CALENDAR, editId, fields);
+    } else {
+      fields['创建者'] = user.account;
+      fields['创建时间'] = new Date().toISOString();
+      fields['订阅者'] = '';
+      await teableCreate(TABLE_CALENDAR, fields);
+    }
+    closeEventModal();
+    loadEvents();
+  } catch(e) { alert('保存失败: ' + e.message); }
+}
+
+async function deleteEvent(id) {
+  if (!confirm('确定删除此活动？')) return;
+  try { await teableDelete(TABLE_CALENDAR, id); loadEvents(); }
+  catch(e) { alert('删除失败'); }
+}
+</script>
+</div><!-- /main-area -->
+</div><!-- /app-shell -->
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.png
+*.jpg
+_nav_template.txt
+.claude/
+skills/
+.clawhub/
