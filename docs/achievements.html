@@ -110,7 +110,7 @@
 
 <div class="app-shell">
 <aside class="sidebar">
-  <div class="sidebar-brand"><span class="sidebar-brand-icon">🏅</span><span>集团仓储管理部<br>AI共创</span></div>
+  <div class="sidebar-brand"><span class="sidebar-brand-icon"></span><span>集团仓储管理部<br>AI共创</span></div>
   <div class="sidebar-nav">
     <a class="sidebar-link" href="home.html"><span class="sidebar-link-icon">🏠</span><span>首页</span></a>
     <a class="sidebar-link" href="gallery.html"><span class="sidebar-link-icon">🏅</span><span>勋章墙</span></a>
@@ -141,6 +141,7 @@
     <button class="module-btn" onclick="switchModule('partners',this)">🤖 数字伙伴 <span class="module-count" id="cnt-partners">-</span></button>
     <button class="module-btn" onclick="switchModule('agents',this)">🧠 Agent <span class="module-count" id="cnt-agents">0</span></button>
     <button class="module-btn" onclick="switchModule('web',this)">🌐 网页 <span class="module-count" id="cnt-web">-</span></button>
+    <button class="module-btn" onclick="switchModule('wishes',this)">🌟 达成愿望 <span class="module-count" id="cnt-wishes">-</span></button>
   </div>
 
   <!-- Activities -->
@@ -176,6 +177,12 @@
       <iframe src="https://alading.tal.com/preview?page_hash_id=yeJqnExM&uuid=8a6ee48a-01f9-475f-9493-4309a4e52acb" loading="lazy"></iframe>
     </div>
   </div>
+
+  <!-- Wishes -->
+  <div id="mod-wishes" class="module-section">
+    <div class="stats-row" id="stats-wishes"></div>
+    <div id="list-wishes" class="card-grid"></div>
+  </div>
 </div>
 
 <script src="api.js"></script>
@@ -188,7 +195,7 @@ else {
   loadAll();
 }
 
-let activities = [], skills = [], partners = [], webApps = [];
+let activities = [], skills = [], partners = [], webApps = [], allWishesData = [];
 
 function switchModule(mod, el) {
   document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
@@ -199,24 +206,28 @@ function switchModule(mod, el) {
 
 async function loadAll() {
   try {
-    [activities, skills, partners, webApps] = await Promise.all([
+    [activities, skills, partners, webApps, allWishesData] = await Promise.all([
       teableGet(TABLE_CALENDAR),
       teableGet(TABLE_SKILLS),
       teableGet(TABLE_PARTNERS),
       teableGet(TABLE_WEB),
+      teableGet(TABLE_WISH),
     ]);
     activities.sort((a, b) => (b.fields['开始时间']||'').localeCompare(a.fields['开始时间']||''));
     partners.sort((a, b) => (b.fields['使用量']||0) - (a.fields['使用量']||0));
 
+    const doneWishes = allWishesData.filter(w => w.fields['状态'] === '已完成');
     document.getElementById('cnt-activities').textContent = activities.length;
     document.getElementById('cnt-skills').textContent = skills.length;
     document.getElementById('cnt-partners').textContent = partners.length;
     document.getElementById('cnt-web').textContent = webApps.length;
+    document.getElementById('cnt-wishes').textContent = doneWishes.length;
 
     renderActivities();
     renderSkills();
     renderPartners();
     renderWebStats();
+    renderWishes();
   } catch(e) { console.error(e); }
 }
 
@@ -331,6 +342,49 @@ function renderWebStats() {
     <div class="mini-stat"><div class="mini-stat-num">${topDev?topDev[1]:0}</div><div class="mini-stat-label">最活跃: ${topDev?topDev[0]:'-'}</div></div>
     <div class="mini-stat"><div class="mini-stat-num">阿拉丁</div><div class="mini-stat-label">托管平台</div></div>
   `;
+}
+
+// ─── Wishes ────────────────────────────────────────────────
+function renderWishes() {
+  const done = allWishesData.filter(w => w.fields['状态'] === '已完成');
+  const claimers = {};
+  done.forEach(w => { const c = w.fields['领取者']||''; claimers[c] = (claimers[c]||0)+1; });
+  const topClaimer = Object.entries(claimers).sort((a,b) => b[1]-a[1])[0];
+
+  // 需要用户表做昵称映射（复用已有缓存）
+  const userMap = {};
+  // 尝试从缓存读用户表
+  try {
+    const cached = sessionStorage.getItem('tc_' + TABLE_USER);
+    if (cached) {
+      JSON.parse(cached).data.forEach(u => { userMap[u.fields['账号']] = u.fields['昵称']; });
+    }
+  } catch {}
+
+  document.getElementById('stats-wishes').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-num">${allWishesData.filter(w=>w.fields['状态']!=='已撤回'&&w.fields['状态']!=='已拒绝').length}</div><div class="mini-stat-label">总愿望</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${done.length}</div><div class="mini-stat-label">已实现</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${Object.keys(claimers).length}</div><div class="mini-stat-label">实现者</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${topClaimer ? (userMap[topClaimer[0]]||topClaimer[0]) : '-'}</div><div class="mini-stat-label">最佳实现者${topClaimer ? ' · '+topClaimer[1]+'次' : ''}</div></div>
+  `;
+
+  document.getElementById('list-wishes').innerHTML = done.length === 0
+    ? '<div class="empty-module" style="grid-column:1/-1"><div class="empty-module-icon">🌟</div><p>还没有达成的愿望</p></div>'
+    : done.map(w => {
+        const f = w.fields;
+        const submitter = userMap[f['提交者']] || f['提交者'] || '-';
+        const claimer = userMap[f['领取者']] || f['领取者'] || '-';
+        const doneDate = (f['完成时间']||'').slice(0,10);
+        return `<div class="item-card">
+          <div class="item-title">${f['标题']||'未命名'}</div>
+          <div class="item-desc">${f['内容']||''}</div>
+          <div class="item-meta">
+            <span class="item-meta-tag">🙋 许愿: ${submitter}</span>
+            <span class="item-meta-tag">⭐ 实现: ${claimer}</span>
+            ${doneDate ? `<span class="item-meta-tag">📅 ${doneDate}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('');
 }
 </script>
 </div><!-- /main-area -->
