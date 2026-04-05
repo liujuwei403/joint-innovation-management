@@ -102,24 +102,34 @@ else {
 
 let achievementData = { earned: [], locked: [] };
 let userContributions = {};
+let myManualAwards = [], badgeMapData = {};
 
 async function loadBadgeWall() {
   try {
-    const [activities, skills, partners, webApps, wishes] = await Promise.all([
+    const [activities, skills, partners, webApps, wishes, badges, awards] = await Promise.all([
       teableGet(TABLE_CALENDAR),
       teableGet(TABLE_SKILLS),
       teableGet(TABLE_PARTNERS),
       teableGet(TABLE_WEB),
       teableGet(TABLE_WISH),
+      teableGet(TABLE_BADGE),
+      teableGet(TABLE_AWARD),
       loadAchievementConfig(),
       loadAchievementImages(),
     ]);
 
+    // 手动授予的勋章
+    badgeMapData = {};
+    badges.forEach(b => { badgeMapData[b.fields['名称']] = b; });
+    myManualAwards = awards.filter(a => a.fields['账号'] === user.account);
+
     userContributions = computeUserContributions(user.account, user.nickname, activities, skills, partners, webApps, wishes);
     achievementData = generateAchievementBadges(userContributions);
 
+    const totalAch = ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length;
+    const totalEarned = achievementData.earned.length + myManualAwards.length;
     document.getElementById('badge-total').textContent =
-      `${achievementData.earned.length} / ${ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length}`;
+      `${totalEarned} / ${totalAch + badges.length}`;
 
     // 渲染贡献统计条
     const statsEl = document.getElementById('contrib-stats');
@@ -151,10 +161,18 @@ function renderWall(filter) {
   let html = '';
 
   if (filter === 'all' || filter === 'earned') {
+    // 成就勋章
     achievementData.earned.forEach(b => { html += renderAchievementCard(b); });
+    // 手动授予的勋章
+    myManualAwards.forEach(a => { html += renderBadgeCard(a, badgeMapData); });
   }
   if (filter === 'all' || filter === 'locked') {
     achievementData.locked.forEach(b => { html += renderLockedAchievementCard(b); });
+    // 未获得的手动勋章
+    const earnedNames = new Set(myManualAwards.map(a => a.fields['勋章名称']));
+    Object.values(badgeMapData).forEach(b => {
+      if (!earnedNames.has(b.fields['名称'])) html += renderLockedBadgeCard(b);
+    });
   }
 
   if (!html) {
