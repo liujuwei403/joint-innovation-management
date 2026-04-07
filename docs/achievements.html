@@ -207,11 +207,11 @@ function switchModule(mod, el) {
 async function loadAll() {
   try {
     [activities, skills, partners, webApps, allWishesData] = await Promise.all([
-      teableGet(TABLE_CALENDAR),
-      teableGet(TABLE_SKILLS),
-      teableGet(TABLE_PARTNERS),
-      teableGet(TABLE_WEB),
-      teableGet(TABLE_WISH),
+      teableGet(TABLE_CALENDAR, true),
+      teableGet(TABLE_SKILLS, true),
+      teableGet(TABLE_PARTNERS, true),
+      teableGet(TABLE_WEB, true),
+      teableGet(TABLE_WISH, true),
     ]);
     activities.sort((a, b) => (b.fields['开始时间']||'').localeCompare(a.fields['开始时间']||''));
     partners.sort((a, b) => (b.fields['使用量']||0) - (a.fields['使用量']||0));
