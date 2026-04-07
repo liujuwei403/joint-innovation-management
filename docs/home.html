@@ -42,6 +42,13 @@
   .nav-card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
   .nav-card-desc { font-size: 13px; color: var(--text-secondary); }
   .nav-card-stat { font-size: 24px; font-weight: 800; color: var(--accent-light); margin-top: 10px; }
+  .nav-card { position: relative; }
+  .nav-card-stat-badge {
+    position: absolute; top: 16px; right: 20px;
+    font-size: 13px; font-weight: 700; color: var(--accent-light);
+    background: rgba(127,90,240,0.15); border: 1px solid rgba(127,90,240,0.3);
+    border-radius: 20px; padding: 3px 10px; line-height: 1.4;
+  }
 
   @media (max-width: 640px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
@@ -56,12 +63,12 @@
 <aside class="sidebar">
   <div class="sidebar-brand"><span class="sidebar-brand-icon"></span><span>集团仓储管理部<br>AI共创</span></div>
   <div class="sidebar-nav">
-    <a class="sidebar-link active" href="home.html"><span class="sidebar-link-icon">🏠</span><span>首页</span></a>
+    <a class="sidebar-link active" href="home.html"><span class="sidebar-link-icon icon-gold">🏠</span><span>首页</span></a>
     <a class="sidebar-link" href="gallery.html"><span class="sidebar-link-icon">🏅</span><span>勋章墙</span></a>
-    <a class="sidebar-link" href="calendar.html"><span class="sidebar-link-icon">📅</span><span>共创日历</span></a>
+    <a class="sidebar-link" href="calendar.html"><span class="sidebar-link-icon icon-gold">📅</span><span>共创日历</span></a>
     <a class="sidebar-link" href="achievements.html"><span class="sidebar-link-icon">🏆</span><span>共创成果</span></a>
     <a class="sidebar-link" href="wishes.html"><span class="sidebar-link-icon">🌟</span><span>许愿池</span></a>
-    <a class="sidebar-link admin-link" href="admin.html" id="admin-tab"><span class="sidebar-link-icon">⚙️</span><span>管理后台</span></a>
+    <a class="sidebar-link admin-link" href="admin.html" id="admin-tab"><span class="sidebar-link-icon icon-gold">⚙️</span><span>管理后台</span></a>
   </div>
 </aside>
 <div class="main-area">
@@ -82,19 +89,19 @@
   <div class="stats">
     <div class="stat-card"><div class="stat-icon">🎖️</div><div class="stat-num" id="s-my">-</div><div class="stat-label">我的勋章</div></div>
     <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-num" id="s-total">-</div><div class="stat-label">全部勋章</div></div>
-    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-num" id="s-members">-</div><div class="stat-label">团队成员</div></div>
+    <div class="stat-card"><div class="stat-icon" style="filter:sepia(1) saturate(4) hue-rotate(5deg) brightness(1.1)">👥</div><div class="stat-num" id="s-members">-</div><div class="stat-label">团队成员</div></div>
     <div class="stat-card"><div class="stat-icon">✨</div><div class="stat-num" id="s-awards">-</div><div class="stat-label">总授予次数</div></div>
   </div>
 
   <div class="nav-cards">
     <a class="nav-card" href="gallery.html">
+      <div class="nav-card-stat-badge" id="card-badges">-</div>
       <div class="nav-card-icon">🏅</div>
       <div class="nav-card-title">我的勋章墙</div>
       <div class="nav-card-desc">查看已获得和未解锁的全部勋章</div>
-      <div class="nav-card-stat" id="card-badges">-</div>
     </a>
     <a class="nav-card" href="calendar.html">
-      <div class="nav-card-icon">📅</div>
+      <div class="nav-card-icon icon-gold">📅</div>
       <div class="nav-card-title">共创日历</div>
       <div class="nav-card-desc">查看团队 AI 学习与分享活动</div>
     </a>
@@ -109,7 +116,7 @@
       <div class="nav-card-desc">许下愿望，等待有缘人实现</div>
     </a>
     <a class="nav-card" href="admin.html" id="admin-card" style="display:none">
-      <div class="nav-card-icon">⚙️</div>
+      <div class="nav-card-icon" style="filter:sepia(1) saturate(4) hue-rotate(5deg) brightness(1.1)">⚙️</div>
       <div class="nav-card-title">管理后台</div>
       <div class="nav-card-desc">管理用户、创建勋章、授予勋章</div>
       <div class="nav-card-stat" id="card-admin"></div>

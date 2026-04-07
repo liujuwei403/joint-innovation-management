@@ -111,6 +111,7 @@ body {
 .sidebar-link.active { color: var(--accent-light); background: rgba(127,90,240,0.15); }
 .sidebar-link.admin-link { display: none; }
 .sidebar-link-icon { font-size: 18px; width: 22px; text-align: center; }
+.icon-gold { filter: sepia(1) saturate(4) hue-rotate(5deg) brightness(1.1); }
 
 /* Top bar */
 .topbar {
