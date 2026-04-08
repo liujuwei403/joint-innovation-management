@@ -1,6 +1,6 @@
 // ─── Teable API 配置 ─────────────────────────────────────────────
 const TEABLE_BASE   = 'https://yach-teable.zhiyinlou.com';
-const TEABLE_TOKEN  = 'REMOVED_TOKEN';
+const TEABLE_TOKEN  = 'teable_accrGoCYgJwpCP4Hy7H_CJNj3/ERLDcxs8cNekS0vxalbXtPNbnTphkd5Qhccz8=';
 const TABLE_USER    = 'tblL9bI0Oc8WTMiZyDN';
 const TABLE_BADGE   = 'tblURak3qtlMfdSkcsw';
 const TABLE_AWARD   = 'tblAFkIIbOXzOd6A9aL';
@@ -278,8 +278,9 @@ function computeUserContributions(account, nickname, activities, skills, partner
     return s.split(/\s+/).some(n => n === nickname);
   }).length;
 
-  // Skills：上传者字段是账号名(如 liujuwei)
-  const skillCount = skills.filter(s => (s.fields['上传者'] || '') === account).length;
+  // Skills：上传者字段是账号名(如 liujuwei)，只取字母部分匹配(忽略尾部数字)
+  const alphaOnly = str => str.replace(/\d+/g, '');
+  const skillCount = skills.filter(s => alphaOnly(s.fields['上传者'] || '') === alphaOnly(account)).length;
 
   // 数字伙伴：开发者字段是昵称(如 刘聚伟)
   const partnerCount = partners.filter(p => (p.fields['开发者'] || '') === nickname).length;
