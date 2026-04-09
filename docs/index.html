@@ -47,6 +47,14 @@
     text-align: center; font-size: 12px; color: var(--text-muted);
   }
 
+  .btn-guest {
+    background: transparent; border: 1px solid var(--glass-border);
+    color: var(--text-muted); font-family: inherit; font-size: 14px;
+    font-weight: 600; padding: 12px; border-radius: var(--radius-md);
+    cursor: pointer; transition: all 0.25s;
+  }
+  .btn-guest:hover { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+
   /* Floating particles */
   .particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
   .particle {
@@ -96,6 +104,9 @@
       </div>
       <button class="btn btn-primary" id="btn-login" style="width:100%;margin-top:8px" onclick="doLogin()">
         <span class="btn-text">登 录</span><div class="spinner"></div>
+      </button>
+      <button class="btn btn-guest" style="width:100%;margin-top:8px" onclick="guestEnter()">
+        <span class="btn-text">游客进入</span>
       </button>
       <div class="msg" id="msg-login"></div>
     </div>
@@ -156,6 +167,13 @@
 })();
 
 if (getCurrentUser()) window.location.href = 'home.html';
+
+function guestEnter() {
+  localStorage.setItem('badge_user', JSON.stringify({
+    id: 'guest', account: 'guest', nickname: '游客', role: '游客'
+  }));
+  window.location.href = 'home.html';
+}
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0)===(tab==='login')));

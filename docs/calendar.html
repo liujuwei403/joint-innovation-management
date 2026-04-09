@@ -247,6 +247,7 @@ const user = getCurrentUser();
 if (!user) window.location.href = 'index.html';
 else {
   document.getElementById('nav-user').textContent = user.nickname;
+  if (user.role === '游客') document.querySelector('.topbar-btn[onclick*="openPwdModal"]').style.display = 'none';
   if (user.role === '管理员') {
     document.getElementById('admin-tab').style.display = 'flex';
     document.getElementById('btn-add-event').style.display = '';

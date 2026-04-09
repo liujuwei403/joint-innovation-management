@@ -90,7 +90,7 @@
     <div class="stat-card"><div class="stat-icon">🎖️</div><div class="stat-num" id="s-my">-</div><div class="stat-label">我的勋章</div></div>
     <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-num" id="s-total">-</div><div class="stat-label">全部勋章</div></div>
     <div class="stat-card"><div class="stat-icon" style="filter:sepia(1) saturate(4) hue-rotate(5deg) brightness(1.1)">👥</div><div class="stat-num" id="s-members">-</div><div class="stat-label">团队成员</div></div>
-    <div class="stat-card"><div class="stat-icon">✨</div><div class="stat-num" id="s-awards">-</div><div class="stat-label">总授予次数</div></div>
+    <div class="stat-card"><div class="stat-icon">🌟</div><div class="stat-num" id="s-wishes">-</div><div class="stat-label">待实现愿望</div></div>
   </div>
 
   <div class="nav-cards">
@@ -131,6 +131,7 @@ if (!user) window.location.href = 'index.html';
 else {
   document.getElementById('nav-user').textContent = user.nickname;
   document.getElementById('greeting').textContent = `你好，${user.nickname}`;
+  if (user.role === '游客') document.querySelector('.topbar-btn[onclick*="openPwdModal"]').style.display = 'none';
   if (user.role === '管理员') {
     document.getElementById('admin-tab').style.display = 'flex';
     document.getElementById('admin-card').style.display = '';
@@ -147,17 +148,27 @@ async function loadData() {
   } catch(e) {}
   // 异步加载勋章统计（不阻塞页面）
   try {
-    const [activities, skills, partners, webApps, wishes] = await Promise.all([
+    const [manualBadges, allWishes] = await Promise.all([teableGet(TABLE_BADGE), teableGet(TABLE_WISH), loadAchievementConfig()]);
+    const totalBadges = ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length + manualBadges.length;
+    const pendingWishes = allWishes.filter(w => w.fields['状态'] === '已通过').length;
+    animateNum('s-wishes', pendingWishes);
+    if (user.role === '游客') {
+      animateNum('s-my', 0);
+      animateNum('s-total', totalBadges);
+      document.getElementById('card-badges').textContent = `0 / ${totalBadges}`;
+      return;
+    }
+    const [activities, skills, partners, webApps, awards] = await Promise.all([
       teableGet(TABLE_CALENDAR), teableGet(TABLE_SKILLS), teableGet(TABLE_PARTNERS),
-      teableGet(TABLE_WEB), teableGet(TABLE_WISH), loadAchievementConfig(),
+      teableGet(TABLE_WEB), teableGet(TABLE_AWARD),
     ]);
-    const contributions = computeUserContributions(user.account, user.nickname, activities, skills, partners, webApps, wishes);
-    const badges = generateAchievementBadges(contributions);
-    const totalBadges = ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length;
-    animateNum('s-my', badges.earned.length);
+    const myAwards = awards.filter(a => a.fields['账号'] === user.account);
+    const contributions = computeUserContributions(user.account, user.nickname, activities, skills, partners, webApps, allWishes);
+    const achBadges = generateAchievementBadges(contributions);
+    const myTotal = achBadges.earned.length + myAwards.length;
+    animateNum('s-my', myTotal);
     animateNum('s-total', totalBadges);
-    animateNum('s-awards', badges.earned.length);
-    document.getElementById('card-badges').textContent = `${badges.earned.length} / ${totalBadges}`;
+    document.getElementById('card-badges').textContent = `${myTotal} / ${totalBadges}`;
   } catch(e) {}
 }
 

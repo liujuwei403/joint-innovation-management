@@ -96,6 +96,7 @@ const user = getCurrentUser();
 if (!user) window.location.href = 'index.html';
 else {
   document.getElementById('nav-user').textContent = user.nickname;
+  if (user.role === '游客') document.querySelector('.topbar-btn[onclick*="openPwdModal"]').style.display = 'none';
   if (user.role === '管理员') document.getElementById('admin-tab').style.display = 'flex';
   loadBadgeWall();
 }
@@ -121,9 +122,14 @@ async function loadBadgeWall() {
     // 手动授予的勋章
     badgeMapData = {};
     badges.forEach(b => { badgeMapData[b.fields['名称']] = b; });
-    myManualAwards = awards.filter(a => a.fields['账号'] === user.account);
 
-    userContributions = computeUserContributions(user.account, user.nickname, activities, skills, partners, webApps, wishes);
+    if (user.role === '游客') {
+      myManualAwards = [];
+      userContributions = { sharer: 0, skills: 0, partners: 0, web: 0, agent: 0, wish: 0 };
+    } else {
+      myManualAwards = awards.filter(a => a.fields['账号'] === user.account);
+      userContributions = computeUserContributions(user.account, user.nickname, activities, skills, partners, webApps, wishes);
+    }
     achievementData = generateAchievementBadges(userContributions);
 
     const totalAch = ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length;
