@@ -86,7 +86,7 @@
   .event-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
   .event-meta-item { display: flex; align-items: center; gap: 4px; }
   .event-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 4px; }
-  .event-links { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .event-links { display: flex; gap: 8px; flex-wrap: wrap; }
   .event-link {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 4px 12px; border-radius: 14px; font-size: 12px; font-weight: 500;
@@ -387,19 +387,14 @@ function renderEventCard(event) {
           ${f['地点'] ? `<span class="event-meta-item">📍 ${f['地点']}</span>` : ''}
         </div>
         ${f['活动内容'] ? `<div class="event-desc">${f['活动内容']}</div>` : ''}
-        <div class="event-links">
+        <div class="event-links" style="align-items:center">
           ${f['文档链接'] ? `<a class="event-link" href="${f['文档链接']}" target="_blank">📄 文档</a>` : ''}
           ${f['录屏链接'] ? `<a class="event-link" href="${f['录屏链接']}" target="_blank">🎬 录屏</a>` : ''}
-        </div>
-        <div class="event-footer">
-          <div></div>
-          <div style="display:flex;gap:6px;align-items:center">
-            ${isAdm ? `<button class="btn-sm btn-ghost" onclick="editEvent('${event.id}')">编辑</button><button class="btn-sm btn-danger-sm" onclick="deleteEvent('${event.id}')">删除</button>` : ''}
-            ${!isPast ? (subbed
-              ? `<button class="sub-btn subscribed" onclick="toggleSub('${event.id}',false)" onmouseenter="this.textContent='取消订阅'" onmouseleave="this.textContent='✓ 已订阅'">✓ 已订阅</button>`
-              : `<button class="sub-btn subscribe" onclick="toggleSub('${event.id}',true)">订阅</button>`
-            ) : ''}
-          </div>
+          ${isAdm ? `<button class="btn-sm btn-ghost" onclick="editEvent('${event.id}')" style="margin-left:auto">编辑</button><button class="btn-sm btn-danger-sm" onclick="deleteEvent('${event.id}')">删除</button>` : ''}
+          ${!isPast ? (subbed
+            ? `<button class="sub-btn subscribed" onclick="toggleSub('${event.id}',false)" onmouseenter="this.textContent='取消订阅'" onmouseleave="this.textContent='✓ 已订阅'"${!isAdm ? ' style="margin-left:auto"' : ''}>✓ 已订阅</button>`
+            : `<button class="sub-btn subscribe" onclick="toggleSub('${event.id}',true)"${!isAdm ? ' style="margin-left:auto"' : ''}>订阅</button>`
+          ) : ''}
         </div>
       </div>
     </div>
