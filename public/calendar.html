@@ -378,7 +378,7 @@ function renderEventCard(event) {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <span class="type-badge" style="background:${tc.bg};color:${tc.color};border:1px solid ${tc.border}">${type}</span>
           <span class="event-status ${status.cls}">${status.icon} ${status.label}</span>
-          <span class="sub-info">${subs.length} 人订阅</span>
+          <span class="sub-info" style="display:inline-flex;align-items:center;gap:4px">${subs.length} 人订阅 <span class="sub-avatars" style="margin-left:2px">${avatarHtml}</span></span>
         </div>
         <div class="event-title">${f['标题'] || '未命名活动'}</div>
         <div class="event-time">🕐 ${timeStr}</div>
@@ -392,9 +392,7 @@ function renderEventCard(event) {
           ${f['录屏链接'] ? `<a class="event-link" href="${f['录屏链接']}" target="_blank">🎬 录屏</a>` : ''}
         </div>
         <div class="event-footer">
-          <div style="display:flex;align-items:center">
-            <div class="sub-avatars">${avatarHtml}</div>
-          </div>
+          <div></div>
           <div style="display:flex;gap:6px;align-items:center">
             ${isAdm ? `<button class="btn-sm btn-ghost" onclick="editEvent('${event.id}')">编辑</button><button class="btn-sm btn-danger-sm" onclick="deleteEvent('${event.id}')">删除</button>` : ''}
             ${!isPast ? (subbed
