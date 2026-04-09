@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>首页 · AI共创</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero { margin-bottom: 36px; animation: fadeSlideUp 0.5s ease; }
+  .hero-tag {
+    display: inline-block; padding: 5px 14px; border-radius: 20px;
+    background: rgba(127,90,240,0.15); color: var(--accent-light);
+    font-size: 12px; font-weight: 600; margin-bottom: 10px;
+    border: 1px solid rgba(127,90,240,0.2);
+  }
+  .hero h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .hero p { color: var(--text-secondary); font-size: 15px; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 40px; animation: fadeSlideUp 0.6s ease;
+  }
+  .stat-icon { font-size: 24px; margin-bottom: 8px; }
+
+  /* Quick nav cards */
+  .nav-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px; animation: fadeSlideUp 0.7s ease;
+  }
+  .nav-card {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl); padding: 28px;
+    text-decoration: none; color: var(--text);
+    transition: all 0.3s ease; display: block;
+  }
+  .nav-card:hover {
+    background: var(--bg-card-hover); transform: translateY(-4px);
+    border-color: rgba(255,255,255,0.15); box-shadow: var(--shadow-md);
+  }
+  .nav-card-icon { font-size: 32px; margin-bottom: 12px; }
+  .nav-card-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .nav-card-desc { font-size: 13px; color: var(--text-secondary); }
+  .nav-card-stat { font-size: 24px; font-weight: 800; color: var(--accent-light); margin-top: 10px; }
+  .nav-card { position: relative; }
+  .nav-card-stat-badge {
+    position: absolute; top: 16px; right: 20px;
+    font-size: 13px; font-weight: 700; color: var(--accent-light);
+    background: rgba(127,90,240,0.15); border: 1px solid rgba(127,90,240,0.3);
+    border-radius: 20px; padding: 3px 10px; line-height: 1.4;
+  }
+
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .hero h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora-bg"></div>
+
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="sidebar-brand-icon"></span><span>集团仓储管理部<br>AI共创</span></div>
+  <div class="sidebar-nav">
+    <a class="sidebar-link active" href="home.html"><span class="sidebar-link-icon icon-gold">🏠</span><span>首页</span></a>
+    <a class="sidebar-link" href="gallery.html"><span class="sidebar-link-icon">🏅</span><span>勋章墙</span></a>
+    <a class="sidebar-link" href="calendar.html"><span class="sidebar-link-icon">📅</span><span>共创日历</span></a>
+    <a class="sidebar-link" href="achievements.html"><span class="sidebar-link-icon">🏆</span><span>共创成果</span></a>
+    <a class="sidebar-link" href="wishes.html"><span class="sidebar-link-icon">🌟</span><span>许愿池</span></a>
+    <a class="sidebar-link admin-link" href="admin.html" id="admin-tab"><span class="sidebar-link-icon icon-gold">⚙️</span><span>管理后台</span></a>
+  </div>
+</aside>
+<div class="main-area">
+<div class="topbar">
+  <div class="topbar-right">
+    <span class="topbar-user" id="nav-user"></span>
+    <button class="topbar-btn" onclick="openPwdModal()">改密</button>
+    <button class="topbar-btn" onclick="logout()">退出</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <h1 id="greeting"></h1>
+    <p>查看你的 AI 能力勋章与成长进度</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-icon">🎖️</div><div class="stat-num" id="s-my">-</div><div class="stat-label">我的勋章</div></div>
+    <div class="stat-card"><div class="stat-icon">🏅</div><div class="stat-num" id="s-total">-</div><div class="stat-label">全部勋章</div></div>
+    <div class="stat-card"><div class="stat-icon" style="filter:sepia(1) saturate(4) hue-rotate(5deg) brightness(1.1)">👥</div><div class="stat-num" id="s-members">-</div><div class="stat-label">团队成员</div></div>
+    <div class="stat-card"><div class="stat-icon">🌟</div><div class="stat-num" id="s-wishes">-</div><div class="stat-label">待实现愿望</div></div>
+  </div>
+
+  <div class="nav-cards">
+    <a class="nav-card" href="gallery.html">
+      <div class="nav-card-stat-badge" id="card-badges">-</div>
+      <div class="nav-card-icon">🏅</div>
+      <div class="nav-card-title">我的勋章墙</div>
+      <div class="nav-card-desc">查看已获得和未解锁的全部勋章</div>
+    </a>
+    <a class="nav-card" href="calendar.html">
+      <div class="nav-card-icon">📅</div>
+      <div class="nav-card-title">共创日历</div>
+      <div class="nav-card-desc">查看团队 AI 学习与分享活动</div>
+    </a>
+    <a class="nav-card" href="achievements.html">
+      <div class="nav-card-icon">🏆</div>
+      <div class="nav-card-title">共创成果</div>
+      <div class="nav-card-desc">活动记录、Skills、数字伙伴、网页等成果展示</div>
+    </a>
+    <a class="nav-card" href="wishes.html">
+      <div class="nav-card-icon">🌟</div>
+      <div class="nav-card-title">许愿池</div>
+      <div class="nav-card-desc">许下愿望，等待有缘人实现</div>
+    </a>
+    <a class="nav-card" href="admin.html" id="admin-card" style="display:none">
+      <div class="nav-card-icon" style="filter:sepia(1) saturate(4) hue-rotate(5deg) brightness(1.1)">⚙️</div>
+      <div class="nav-card-title">管理后台</div>
+      <div class="nav-card-desc">管理用户、创建勋章、授予勋章</div>
+      <div class="nav-card-stat" id="card-admin"></div>
+    </a>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const user = getCurrentUser();
+if (!user) window.location.href = 'index.html';
+else {
+  document.getElementById('nav-user').textContent = user.nickname;
+  document.getElementById('greeting').textContent = `你好，${user.nickname}`;
+  if (user.role === '游客') document.querySelector('.topbar-btn[onclick*="openPwdModal"]').style.display = 'none';
+  if (user.role === '管理员') {
+    document.getElementById('admin-tab').style.display = 'flex';
+    document.getElementById('admin-card').style.display = '';
+  }
+  loadData();
+}
+
+async function loadData() {
+  // 先快速加载用户表显示成员数
+  try {
+    const users = await teableGet(TABLE_USER);
+    const activeUsers = users.filter(u => u.fields['状态'] === '已激活');
+    animateNum('s-members', activeUsers.length);
+  } catch(e) {}
+  // 异步加载勋章统计（不阻塞页面）
+  try {
+    const [manualBadges, allWishes] = await Promise.all([teableGet(TABLE_BADGE), teableGet(TABLE_WISH), loadAchievementConfig()]);
+    const totalBadges = ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length + manualBadges.length;
+    const pendingWishes = allWishes.filter(w => w.fields['状态'] === '已通过').length;
+    animateNum('s-wishes', pendingWishes);
+    if (user.role === '游客') {
+      animateNum('s-my', 0);
+      animateNum('s-total', totalBadges);
+      document.getElementById('card-badges').textContent = `0 / ${totalBadges}`;
+      return;
+    }
+    const [activities, skills, partners, webApps, awards] = await Promise.all([
+      teableGet(TABLE_CALENDAR), teableGet(TABLE_SKILLS), teableGet(TABLE_PARTNERS),
+      teableGet(TABLE_WEB), teableGet(TABLE_AWARD),
+    ]);
+    const myAwards = awards.filter(a => a.fields['账号'] === user.account);
+    const contributions = computeUserContributions(user.account, user.nickname, activities, skills, partners, webApps, allWishes);
+    const achBadges = generateAchievementBadges(contributions);
+    const myTotal = achBadges.earned.length + myAwards.length;
+    animateNum('s-my', myTotal);
+    animateNum('s-total', totalBadges);
+    document.getElementById('card-badges').textContent = `${myTotal} / ${totalBadges}`;
+  } catch(e) {}
+}
+
+function animateNum(id, target) {
+  const el = document.getElementById(id);
+  if (target === 0) { el.textContent = '0'; return; }
+  let cur = 0;
+  const step = Math.ceil(target / 25);
+  const iv = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = cur;
+    if (cur >= target) clearInterval(iv);
+  }, 35);
+}
+</script>
+</div><!-- /main-area -->
+</div><!-- /app-shell -->
+</body>
+</html>

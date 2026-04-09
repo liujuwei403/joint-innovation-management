@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>共创成果 · AI共创</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .page-header { margin-bottom: 28px; animation: fadeSlideUp 0.5s ease; }
+  .page-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .page-desc { color: var(--text-secondary); font-size: 14px; }
+
+  /* Module nav */
+  .module-nav {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 28px;
+    animation: fadeSlideUp 0.55s ease;
+  }
+  .module-btn {
+    padding: 8px 20px; border: 1px solid var(--glass-border); border-radius: 20px;
+    background: transparent; color: var(--text-secondary); font-family: inherit;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .module-btn:hover { border-color: var(--accent); color: var(--accent-light); }
+  .module-btn.active { background: rgba(127,90,240,0.2); border-color: var(--accent); color: var(--accent-light); }
+  .module-count {
+    font-size: 11px; padding: 1px 7px; border-radius: 8px;
+    background: rgba(255,255,255,0.1); font-weight: 700;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .mini-stat {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 16px; text-align: center;
+  }
+  .mini-stat-num { font-size: 24px; font-weight: 800; color: var(--accent-light); }
+  .mini-stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Module section */
+  .module-section { display: none; animation: fadeSlideUp 0.3s ease; }
+  .module-section.active { display: block; }
+
+  /* Card grid */
+  .card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+  .item-card {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg); padding: 20px;
+    transition: all 0.3s;
+  }
+  .item-card:hover { background: var(--bg-card-hover); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .item-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .item-title a { color: var(--text); text-decoration: none; }
+  .item-title a:hover { color: var(--accent-light); }
+  .item-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
+  .item-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-muted); }
+  .item-meta-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px; border-radius: 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+  }
+  .item-links { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .item-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 14px; font-size: 12px; font-weight: 500;
+    background: rgba(127,90,240,0.1); color: var(--accent-light);
+    border: 1px solid rgba(127,90,240,0.15); text-decoration: none;
+    transition: all 0.2s;
+  }
+  .item-link:hover { background: rgba(127,90,240,0.2); }
+
+  /* Usage badge */
+  .usage-badge {
+    font-size: 12px; font-weight: 700; color: var(--accent2);
+    background: rgba(44,182,125,0.12); padding: 3px 10px; border-radius: 10px;
+  }
+
+  /* List table style */
+  .list-table { width: 100%; }
+  .list-table .item-card { border-radius: var(--radius-md); padding: 16px 20px; }
+  .list-table .item-card { display: flex; align-items: center; gap: 16px; }
+  .list-table .item-info { flex: 1; min-width: 0; }
+  .list-table .item-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+  /* Iframe embed */
+  .embed-frame {
+    width: 100%; height: 700px; border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg); overflow: hidden;
+  }
+  .embed-frame iframe { width: 100%; height: 100%; border: none; }
+
+  .empty-module { text-align: center; padding: 60px 24px; color: var(--text-muted); }
+  .empty-module-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    .card-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="aurora-bg"></div>
+
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="sidebar-brand-icon"></span><span>集团仓储管理部<br>AI共创</span></div>
+  <div class="sidebar-nav">
+    <a class="sidebar-link" href="home.html"><span class="sidebar-link-icon icon-gold">🏠</span><span>首页</span></a>
+    <a class="sidebar-link" href="gallery.html"><span class="sidebar-link-icon">🏅</span><span>勋章墙</span></a>
+    <a class="sidebar-link" href="calendar.html"><span class="sidebar-link-icon">📅</span><span>共创日历</span></a>
+    <a class="sidebar-link active" href="achievements.html"><span class="sidebar-link-icon">🏆</span><span>共创成果</span></a>
+    <a class="sidebar-link" href="wishes.html"><span class="sidebar-link-icon">🌟</span><span>许愿池</span></a>
+    <a class="sidebar-link admin-link" href="admin.html" id="admin-tab"><span class="sidebar-link-icon icon-gold">⚙️</span><span>管理后台</span></a>
+  </div>
+</aside>
+<div class="main-area">
+<div class="topbar">
+  <div class="topbar-right">
+    <span class="topbar-user" id="nav-user"></span>
+    <button class="topbar-btn" onclick="openPwdModal()">改密</button>
+    <button class="topbar-btn" onclick="logout()">退出</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="page-header">
+    <div class="page-title">共创成果</div>
+    <div class="page-desc">团队 AI 共创的全部成果展示</div>
+  </div>
+
+  <div class="module-nav">
+    <button class="module-btn active" onclick="switchModule('activities',this)">📅 活动记录 <span class="module-count" id="cnt-activities">-</span></button>
+    <button class="module-btn" onclick="switchModule('skills',this)">🛠️ Skills <span class="module-count" id="cnt-skills">-</span></button>
+    <button class="module-btn" onclick="switchModule('partners',this)">🤖 数字伙伴 <span class="module-count" id="cnt-partners">-</span></button>
+    <button class="module-btn" onclick="switchModule('agents',this)">🧠 Agent <span class="module-count" id="cnt-agents">0</span></button>
+    <button class="module-btn" onclick="switchModule('web',this)">🌐 网页 <span class="module-count" id="cnt-web">-</span></button>
+    <button class="module-btn" onclick="switchModule('wishes',this)">🌟 达成愿望 <span class="module-count" id="cnt-wishes">-</span></button>
+  </div>
+
+  <!-- Activities -->
+  <div id="mod-activities" class="module-section active">
+    <div class="stats-row" id="stats-activities"></div>
+    <div id="list-activities" class="card-grid"></div>
+  </div>
+
+  <!-- Skills -->
+  <div id="mod-skills" class="module-section">
+    <div class="stats-row" id="stats-skills"></div>
+    <div id="list-skills" class="card-grid"></div>
+  </div>
+
+  <!-- Partners -->
+  <div id="mod-partners" class="module-section">
+    <div class="stats-row" id="stats-partners"></div>
+    <div id="list-partners" class="card-grid"></div>
+  </div>
+
+  <!-- Agents -->
+  <div id="mod-agents" class="module-section">
+    <div class="empty-module">
+      <div class="empty-module-icon">🧠</div>
+      <p>Agent 模块建设中，敬请期待...</p>
+    </div>
+  </div>
+
+  <!-- Web -->
+  <div id="mod-web" class="module-section">
+    <div class="stats-row" id="stats-web"></div>
+    <div class="embed-frame">
+      <iframe src="https://alading.tal.com/preview?page_hash_id=yeJqnExM&uuid=8a6ee48a-01f9-475f-9493-4309a4e52acb" loading="lazy"></iframe>
+    </div>
+  </div>
+
+  <!-- Wishes -->
+  <div id="mod-wishes" class="module-section">
+    <div class="stats-row" id="stats-wishes"></div>
+    <div id="list-wishes" class="card-grid"></div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const user = getCurrentUser();
+if (!user) window.location.href = 'index.html';
+else {
+  document.getElementById('nav-user').textContent = user.nickname;
+  if (user.role === '游客') document.querySelector('.topbar-btn[onclick*="openPwdModal"]').style.display = 'none';
+  if (user.role === '管理员') document.getElementById('admin-tab').style.display = 'flex';
+  loadAll();
+}
+
+let activities = [], skills = [], partners = [], webApps = [], allWishesData = [];
+
+function switchModule(mod, el) {
+  document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.module-section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('mod-' + mod).classList.add('active');
+}
+
+async function loadAll() {
+  try {
+    [activities, skills, partners, webApps, allWishesData] = await Promise.all([
+      teableGet(TABLE_CALENDAR, true),
+      teableGet(TABLE_SKILLS, true),
+      teableGet(TABLE_PARTNERS, true),
+      teableGet(TABLE_WEB, true),
+      teableGet(TABLE_WISH, true),
+    ]);
+    activities.sort((a, b) => (b.fields['开始时间']||'').localeCompare(a.fields['开始时间']||''));
+    partners.sort((a, b) => (b.fields['使用量']||0) - (a.fields['使用量']||0));
+
+    const doneWishes = allWishesData.filter(w => w.fields['状态'] === '已完成');
+    document.getElementById('cnt-activities').textContent = activities.length;
+    document.getElementById('cnt-skills').textContent = skills.length;
+    document.getElementById('cnt-partners').textContent = partners.length;
+    document.getElementById('cnt-web').textContent = webApps.length;
+    document.getElementById('cnt-wishes').textContent = doneWishes.length;
+
+    renderActivities();
+    renderSkills();
+    renderPartners();
+    renderWebStats();
+    renderWishes();
+  } catch(e) { console.error(e); }
+}
+
+// ─── Activities ─────────────────────────────────────────────
+function renderActivities() {
+  const types = {};
+  const sharers = {};
+  activities.forEach(e => {
+    const t = e.fields['活动类型'] || '其他';
+    types[t] = (types[t]||0) + 1;
+    const s = e.fields['分享者'] || '';
+    s.split(/\s+/).filter(Boolean).forEach(n => { sharers[n] = (sharers[n]||0) + 1; });
+  });
+  const topSharer = Object.entries(sharers).sort((a,b) => b[1]-a[1])[0];
+
+  document.getElementById('stats-activities').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-num">${activities.length}</div><div class="mini-stat-label">总活动数</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${Object.keys(types).length}</div><div class="mini-stat-label">活动类型</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${Object.keys(sharers).length}</div><div class="mini-stat-label">分享人数</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${topSharer ? topSharer[1] : 0}</div><div class="mini-stat-label">最活跃: ${topSharer?topSharer[0]:'-'}</div></div>
+  `;
+
+  document.getElementById('list-activities').innerHTML = activities.map(e => {
+    const f = e.fields;
+    const start = f['开始时间'] ? new Date(f['开始时间']) : null;
+    const dateStr = start ? `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}` : '-';
+    return `<div class="item-card">
+      <div class="item-title">${f['标题']||'未命名'}</div>
+      <div class="item-desc">${f['活动内容']||''}</div>
+      <div class="item-meta">
+        <span class="item-meta-tag">📅 ${dateStr}</span>
+        <span class="item-meta-tag">🏷️ ${f['活动类型']||'-'}</span>
+        <span class="item-meta-tag">👤 ${f['分享者']||'-'}</span>
+      </div>
+      <div class="item-links">
+        ${f['文档链接'] ? `<a class="item-link" href="${f['文档链接']}" target="_blank">📄 文档</a>` : ''}
+        ${f['录屏链接'] ? `<a class="item-link" href="${f['录屏链接']}" target="_blank">🎬 录屏</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Skills ─────────────────────────────────────────────────
+function renderSkills() {
+  const uploaders = {};
+  skills.forEach(s => { const u = s.fields['上传者']||''; uploaders[u] = (uploaders[u]||0)+1; });
+
+  document.getElementById('stats-skills').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-num">${skills.length}</div><div class="mini-stat-label">Skills 总数</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${Object.keys(uploaders).length}</div><div class="mini-stat-label">贡献者</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${skills.filter(s=>(s.fields['触发方式']||'').startsWith('/')).length}</div><div class="mini-stat-label">斜杠命令</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${skills.filter(s=>!(s.fields['触发方式']||'').startsWith('/')).length}</div><div class="mini-stat-label">自然语言触发</div></div>
+  `;
+
+  document.getElementById('list-skills').innerHTML = skills.map(s => {
+    const f = s.fields;
+    const trigger = f['触发方式']||'';
+    const triggerColor = trigger.startsWith('/') ? 'rgba(127,90,240,0.15)' : 'rgba(44,182,125,0.12)';
+    const triggerText = trigger.startsWith('/') ? 'var(--accent-light)' : 'var(--accent2)';
+    return `<div class="item-card">
+      <div class="item-title">${f['名称']||'-'}</div>
+      <div class="item-desc">${f['功能简介']||''}</div>
+      <div class="item-meta">
+        <span class="item-meta-tag" style="background:${triggerColor};color:${triggerText};border-color:transparent">${trigger||'自然语言'}</span>
+        <span class="item-meta-tag">👤 ${f['上传者']||'-'}</span>
+        <span class="item-meta-tag">📦 ${f['版本号']||'-'}</span>
+        <span class="item-meta-tag">📅 ${f['更新时间']||'-'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Partners ───────────────────────────────────────────────
+function renderPartners() {
+  const totalUsage = partners.reduce((s, p) => s + (p.fields['使用量']||0), 0);
+  const devs = {};
+  partners.forEach(p => { const d = p.fields['开发者']||''; devs[d] = (devs[d]||0)+1; });
+  const topDev = Object.entries(devs).sort((a,b) => b[1]-a[1])[0];
+
+  document.getElementById('stats-partners').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-num">${partners.length}</div><div class="mini-stat-label">数字伙伴数</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${totalUsage.toLocaleString()}</div><div class="mini-stat-label">总使用量</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${Object.keys(devs).length}</div><div class="mini-stat-label">开发者</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${topDev?topDev[1]:0}</div><div class="mini-stat-label">最活跃: ${topDev?topDev[0]:'-'}</div></div>
+  `;
+
+  document.getElementById('list-partners').innerHTML = partners.map(p => {
+    const f = p.fields;
+    return `<div class="item-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div class="item-title"><a href="${f['链接']||'#'}" target="_blank">${f['名称']||'-'}</a></div>
+        <span class="usage-badge">${(f['使用量']||0).toLocaleString()} 次</span>
+      </div>
+      <div class="item-desc">${f['功能概述']||''}</div>
+      <div class="item-meta">
+        <span class="item-meta-tag">👤 ${f['开发者']||'-'}</span>
+        <span class="item-meta-tag">📅 ${f['上线时间']||'-'}</span>
+      </div>
+      ${f['链接'] ? `<div class="item-links"><a class="item-link" href="${f['链接']}" target="_blank">🔗 打开</a></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── Web Stats ──────────────────────────────────────────────
+function renderWebStats() {
+  const devs = {};
+  webApps.forEach(w => { const d = w.fields['开发者']||''; devs[d] = (devs[d]||0)+1; });
+  const topDev = Object.entries(devs).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('stats-web').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-num">${webApps.length}</div><div class="mini-stat-label">网页应用数</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${Object.keys(devs).length}</div><div class="mini-stat-label">开发者</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${topDev?topDev[1]:0}</div><div class="mini-stat-label">最活跃: ${topDev?topDev[0]:'-'}</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">阿拉丁</div><div class="mini-stat-label">托管平台</div></div>
+  `;
+}
+
+// ─── Wishes ────────────────────────────────────────────────
+function renderWishes() {
+  const done = allWishesData.filter(w => w.fields['状态'] === '已完成');
+  const claimers = {};
+  done.forEach(w => { const c = w.fields['领取者']||''; claimers[c] = (claimers[c]||0)+1; });
+  const topClaimer = Object.entries(claimers).sort((a,b) => b[1]-a[1])[0];
+
+  // 需要用户表做昵称映射（复用已有缓存）
+  const userMap = {};
+  // 尝试从缓存读用户表
+  try {
+    const cached = sessionStorage.getItem('tc_' + TABLE_USER);
+    if (cached) {
+      JSON.parse(cached).data.forEach(u => { userMap[u.fields['账号']] = u.fields['昵称']; });
+    }
+  } catch {}
+
+  document.getElementById('stats-wishes').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-num">${allWishesData.filter(w=>w.fields['状态']!=='已撤回'&&w.fields['状态']!=='已拒绝').length}</div><div class="mini-stat-label">总愿望</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${done.length}</div><div class="mini-stat-label">已实现</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${Object.keys(claimers).length}</div><div class="mini-stat-label">实现者</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${topClaimer ? (userMap[topClaimer[0]]||topClaimer[0]) : '-'}</div><div class="mini-stat-label">最佳实现者${topClaimer ? ' · '+topClaimer[1]+'次' : ''}</div></div>
+  `;
+
+  document.getElementById('list-wishes').innerHTML = done.length === 0
+    ? '<div class="empty-module" style="grid-column:1/-1"><div class="empty-module-icon">🌟</div><p>还没有达成的愿望</p></div>'
+    : done.map(w => {
+        const f = w.fields;
+        const submitter = userMap[f['提交者']] || f['提交者'] || '-';
+        const claimer = userMap[f['领取者']] || f['领取者'] || '-';
+        const doneDate = (f['完成时间']||'').slice(0,10);
+        return `<div class="item-card">
+          <div class="item-title">${f['标题']||'未命名'}</div>
+          <div class="item-desc">${f['内容']||''}</div>
+          <div class="item-meta">
+            <span class="item-meta-tag">🙋 许愿: ${submitter}</span>
+            <span class="item-meta-tag">⭐ 实现: ${claimer}</span>
+            ${doneDate ? `<span class="item-meta-tag">📅 ${doneDate}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+}
+</script>
+</div><!-- /main-area -->
+</div><!-- /app-shell -->
+</body>
+</html>

@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 · AI共创</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .admin-tabs {
+    display: flex; gap: 4px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 4px;
+    margin-bottom: 28px; animation: fadeSlideUp 0.4s ease;
+  }
+  .admin-tab {
+    padding: 10px 24px; border: none; background: transparent;
+    color: var(--text-muted); font-family: inherit; font-size: 13px;
+    font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.25s;
+  }
+  .admin-tab.active { background: rgba(127,90,240,0.2); color: var(--accent-light); }
+  .admin-tab:hover:not(.active) { color: var(--text-secondary); }
+  .tab-panel { display: none; animation: fadeSlideUp 0.3s ease; }
+  .tab-panel.active { display: block; }
+
+  .btn-add {
+    padding: 10px 22px; border: none; border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--accent), #6d28d9);
+    color: white; font-size: 13px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 16px var(--accent-glow);
+    transition: all 0.2s; font-family: inherit; margin-bottom: 20px;
+  }
+  .btn-add:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
+
+  /* Color picker row */
+  .color-row { display: flex; gap: 10px; align-items: center; }
+  .color-row input[type=text] { flex: 1; }
+  .color-row input[type=color] {
+    width: 42px; height: 42px; border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm); padding: 2px; cursor: pointer;
+    background: transparent;
+  }
+
+  /* Badge preview */
+  .badge-preview {
+    display: flex; align-items: center; gap: 12px; padding: 14px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); margin-bottom: 16px;
+  }
+  .badge-preview-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  }
+  .badge-preview-name { font-weight: 600; font-size: 15px; }
+
+  .modal textarea {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+    color: var(--text); resize: vertical; min-height: 60px;
+  }
+  .modal select {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+    color: var(--text);
+  }
+  .modal select option { background: var(--bg-surface); color: var(--text); }
+
+  /* Table responsive */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius-lg); }
+
+  @media (max-width: 768px) {
+    .admin-tabs { flex-wrap: wrap; }
+    .admin-tab { flex: 1; text-align: center; min-width: 80px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora-bg"></div>
+
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="sidebar-brand-icon"></span><span>集团仓储管理部<br>AI共创</span></div>
+  <div class="sidebar-nav">
+    <a class="sidebar-link" href="home.html"><span class="sidebar-link-icon icon-gold">🏠</span><span>首页</span></a>
+    <a class="sidebar-link" href="gallery.html"><span class="sidebar-link-icon">🏅</span><span>勋章墙</span></a>
+    <a class="sidebar-link" href="calendar.html"><span class="sidebar-link-icon">📅</span><span>共创日历</span></a>
+    <a class="sidebar-link" href="achievements.html"><span class="sidebar-link-icon">🏆</span><span>共创成果</span></a>
+    <a class="sidebar-link" href="wishes.html"><span class="sidebar-link-icon">🌟</span><span>许愿池</span></a>
+    <a class="sidebar-link admin-link active" href="admin.html" id="admin-tab"><span class="sidebar-link-icon icon-gold">⚙️</span><span>管理后台</span></a>
+  </div>
+</aside>
+<div class="main-area">
+<div class="topbar">
+  <div class="topbar-right">
+    <span class="topbar-user" id="nav-user"></span>
+    <button class="topbar-btn" onclick="openPwdModal()">改密</button>
+    <button class="topbar-btn" onclick="logout()">退出</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchAdminTab('users',this)">👥 用户管理</button>
+    <button class="admin-tab" onclick="switchAdminTab('badges',this)">🏅 勋章管理</button>
+    <button class="admin-tab" onclick="switchAdminTab('awards',this)">🎖️ 授予勋章</button>
+    <button class="admin-tab" onclick="switchAdminTab('members',this)">👁️ 全员勋章</button>
+    <button class="admin-tab" onclick="switchAdminTab('achievement',this)">🏆 成就配置</button>
+    <button class="admin-tab" onclick="switchAdminTab('wishes',this)">🌟 许愿管理</button>
+    <button class="admin-tab" onclick="switchAdminTab('calendar',this)">📅 日历订阅</button>
+  </div>
+
+  <div id="panel-users" class="tab-panel active">
+    <div class="table-wrap" id="users-content">
+      <div class="skeleton" style="height:300px;border-radius:14px"></div>
+    </div>
+  </div>
+
+  <div id="panel-badges" class="tab-panel">
+    <button class="btn-add" onclick="openBadgeModal()">+ 新建勋章</button>
+    <div class="table-wrap" id="badges-content"></div>
+  </div>
+
+  <div id="panel-awards" class="tab-panel">
+    <button class="btn-add" onclick="openAwardModal()">+ 授予勋章</button>
+    <div class="table-wrap" id="awards-content"></div>
+  </div>
+
+  <div id="panel-members" class="tab-panel">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:13px;color:var(--text-secondary)">排序方式：</span>
+      <button class="filter-btn active" id="sort-earned" onclick="sortMembers('earned',this)">成就勋章数</button>
+      <button class="filter-btn" id="sort-total" onclick="sortMembers('total',this)">贡献分</button>
+    </div>
+    <div id="members-content"></div>
+  </div>
+
+  <div id="panel-achievement" class="tab-panel">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;align-items:start">
+      <div>
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:14px">勋章类别</h3>
+        <div id="ach-cats-list"></div>
+      </div>
+      <div>
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:14px">等级阈值</h3>
+        <div id="ach-tiers-list"></div>
+      </div>
+    </div>
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:14px">勋章图片</h3>
+    <div id="ach-img-grid" style="overflow-x:auto"></div>
+  </div>
+
+  <div id="panel-wishes" class="tab-panel">
+    <div id="wishes-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px"></div>
+    <div class="table-wrap" id="wishes-content"></div>
+  </div>
+
+  <div id="panel-calendar" class="tab-panel">
+    <div id="calendar-stats"></div>
+    <div class="table-wrap" id="calendar-content" style="margin-top:20px"></div>
+  </div>
+
+</div>
+
+<!-- Badge Modal -->
+<div class="modal-overlay" id="badge-modal">
+  <div class="modal">
+    <h3 id="badge-modal-title">新建勋章</h3>
+    <div class="badge-preview" id="badge-preview">
+      <div class="badge-preview-icon" id="preview-icon" style="background:rgba(127,90,240,0.15)">🏅</div>
+      <div class="badge-preview-name" id="preview-name">勋章预览</div>
+    </div>
+    <input type="hidden" id="badge-edit-id">
+    <div class="field"><label>勋章名称</label><input id="b-name" type="text" placeholder="如：MCP熟练" oninput="updatePreview()"></div>
+    <div class="field"><label>图标 (emoji，无图片时显示)</label><input id="b-icon" type="text" placeholder="如：🎯" maxlength="4" oninput="updatePreview()"></div>
+    <div class="field">
+      <label>勋章图片 (PNG/JPG/GIF，建议 200x200)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <label class="btn-sm btn-accent" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px">
+          📁 选择文件
+          <input id="b-image-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="handleImageUpload(this)">
+        </label>
+        <span id="b-image-name" style="font-size:12px;color:var(--text-muted)">未选择</span>
+        <button class="btn-sm btn-ghost" type="button" onclick="clearImage()" style="display:none" id="b-image-clear">清除</button>
+      </div>
+      <input id="b-image" type="hidden">
+    </div>
+    <div class="field">
+      <label>主题色</label>
+      <div class="color-row">
+        <input id="b-color" type="text" placeholder="#7f5af0" value="#7f5af0" oninput="document.getElementById('b-color-pick').value=this.value;updatePreview()">
+        <input id="b-color-pick" type="color" value="#7f5af0" oninput="document.getElementById('b-color').value=this.value;updatePreview()">
+      </div>
+    </div>
+    <div class="field"><label>描述</label><textarea id="b-desc" placeholder="勋章说明"></textarea></div>
+    <div class="field"><label>价值分（仅管理员可见）</label><input id="b-score" type="number" placeholder="0" min="0"></div>
+    <div class="field"><label>分类</label><input id="b-category" type="text" placeholder="如：技能类、荣誉类"></div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-cancel" onclick="closeBadgeModal()">取消</button>
+      <button class="btn-sm btn-accent" onclick="saveBadge()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Award Modal -->
+<div class="modal-overlay" id="award-modal">
+  <div class="modal">
+    <h3>授予勋章</h3>
+    <div class="field"><label>选择成员</label><select id="a-user"></select></div>
+    <div class="field"><label>选择勋章</label><select id="a-badge"></select></div>
+    <div class="field"><label>备注</label><input id="a-note" type="text" placeholder="授予理由（选填）"></div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-cancel" onclick="closeAwardModal()">取消</button>
+      <button class="btn-sm btn-accent" onclick="saveAward()">授予</button>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const user = getCurrentUser();
+if (!user || user.role !== '管理员') { alert('需要管理员权限'); window.location.href = 'home.html'; }
+document.getElementById('nav-user').textContent = user.nickname;
+document.getElementById('admin-tab').style.display = 'flex';
+
+let allUsers = [], allBadges = [], allAwards = [];
+
+function switchAdminTab(tab, el) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+let allCalEvents = [], allSkills = [], allPartners = [], allWebApps = [], allWishes = [];
+let achCatRecords = [], achTierRecords = [], achImgRecords = [];
+async function loadAll() {
+  [allUsers, allBadges, allAwards, allCalEvents, allSkills, allPartners, allWebApps, allWishes, achCatRecords, achTierRecords, achImgRecords] = await Promise.all([
+    teableGet(TABLE_USER), teableGet(TABLE_BADGE), teableGet(TABLE_AWARD), teableGet(TABLE_CALENDAR),
+    teableGet(TABLE_SKILLS), teableGet(TABLE_PARTNERS), teableGet(TABLE_WEB), teableGet(TABLE_WISH),
+    teableGet(TABLE_ACH_CAT), teableGet(TABLE_ACH_TIER), teableGet(TABLE_ACH_IMG),
+  ]);
+  // 用多维表数据更新全局成就配置
+  if (achCatRecords.length > 0) {
+    ACHIEVEMENT_BADGES = achCatRecords
+      .sort((a, b) => (a.fields['排序']||0) - (b.fields['排序']||0))
+      .map(c => ({ key: c.fields['key'], name: c.fields['名称'], icon: c.fields['图标'], color: c.fields['颜色'] }));
+  }
+  if (achTierRecords.length > 0) {
+    ACHIEVEMENT_TIERS = achTierRecords
+      .sort((a, b) => (a.fields['等级']||0) - (b.fields['等级']||0))
+      .map(t => ({ level: t.fields['等级'], name: t.fields['名称'], threshold: t.fields['阈值'], cls: TIER_CLS_MAP[t.fields['等级']] || 'tier-xinrui', stars: t.fields['等级'] }));
+  }
+  renderUsers(); renderBadges(); renderAwards(); renderMembersView(); renderWishesAdmin(); renderCalendarStats(); renderAchConfig();
+}
+loadAll();
+
+// ─── Users ──────────────────────────────────────────────────
+function renderUsers() {
+  const html = `<table class="data-table">
+    <thead><tr><th>昵称</th><th>账号</th><th>状态</th><th>角色</th><th>注册时间</th><th>操作</th></tr></thead>
+    <tbody>${allUsers.map(u => {
+      const f = u.fields;
+      const statusCls = f['状态']==='已激活'?'status-active':f['状态']==='待审核'?'status-pending':'status-disabled';
+      const regDate = f['注册时间'] ? new Date(f['注册时间']).toLocaleDateString('zh-CN') : '-';
+      return `<tr>
+        <td><b>${f['昵称']||'-'}</b></td><td style="color:var(--text-secondary)">${f['账号']}</td>
+        <td><span class="status ${statusCls}">${f['状态']||'-'}</span></td>
+        <td>${f['角色']||'-'}</td><td style="color:var(--text-muted)">${regDate}</td>
+        <td class="actions-cell">
+          ${f['状态']==='待审核'?`<button class="btn-sm btn-success-sm" onclick="activateUser('${u.id}')">激活</button>`:''}
+          ${f['状态']==='已激活'?`<button class="btn-sm btn-danger-sm" onclick="disableUser('${u.id}')">禁用</button>`:''}
+          ${f['状态']==='已禁用'?`<button class="btn-sm btn-success-sm" onclick="activateUser('${u.id}')">启用</button>`:''}
+          ${f['角色']!=='管理员'?`<button class="btn-sm btn-accent" onclick="setAdmin('${u.id}')">设为管理员</button>`:''}
+        </td></tr>`;
+    }).join('')}</tbody></table>`;
+  document.getElementById('users-content').innerHTML = html;
+}
+
+async function activateUser(id) { await teableUpdate(TABLE_USER, id, {'状态':'已激活'}); toast('用户已激活'); loadAll(); }
+async function disableUser(id) { if (!confirm('确定禁用？')) return; await teableUpdate(TABLE_USER, id, {'状态':'已禁用'}); toast('用户已禁用'); loadAll(); }
+async function setAdmin(id) { if (!confirm('确定设为管理员？')) return; await teableUpdate(TABLE_USER, id, {'角色':'管理员'}); toast('已设为管理员'); loadAll(); }
+
+// ─── Badges ─────────────────────────────────────────────────
+function renderBadges() {
+  if (allBadges.length === 0) {
+    document.getElementById('badges-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏅</div><p>还没有勋章，点击上方按钮创建</p></div>';
+    return;
+  }
+  const html = `<table class="data-table">
+    <thead><tr><th>勋章</th><th>分类</th><th>价值分</th><th>描述</th><th>操作</th></tr></thead>
+    <tbody>${allBadges.map(b => {
+      const f = b.fields;
+      const icon = f['图标']||'🏅', color = f['颜色']||'#7f5af0', image = f['勋章图片'];
+      const visual = image
+        ? `<img src="${image}" style="width:32px;height:32px;object-fit:contain;border-radius:6px" onerror="this.outerHTML='${icon}'">`
+        : icon;
+      return `<tr>
+        <td><span style="display:inline-flex;align-items:center;gap:8px">
+          <span style="width:36px;height:36px;border-radius:50%;background:${color}20;display:inline-flex;align-items:center;justify-content:center;font-size:18px">${visual}</span>
+          <b>${f['名称']}</b></span></td>
+        <td style="color:var(--text-secondary)">${f['分类']||'-'}</td>
+        <td><span style="color:var(--accent-light);font-weight:600">${f['价值分']||0}</span></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary)">${f['描述']||'-'}</td>
+        <td class="actions-cell">
+          <button class="btn-sm btn-accent" onclick="editBadge('${b.id}')">编辑</button>
+          <button class="btn-sm btn-danger-sm" onclick="deleteBadge('${b.id}','${f['名称']}')">删除</button>
+        </td></tr>`;
+    }).join('')}</tbody></table>`;
+  document.getElementById('badges-content').innerHTML = html;
+}
+
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) { toast('图片不能超过 500KB', 'error'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('b-image').value = e.target.result;
+    document.getElementById('b-image-name').textContent = file.name;
+    document.getElementById('b-image-clear').style.display = '';
+    updatePreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  document.getElementById('b-image').value = '';
+  document.getElementById('b-image-file').value = '';
+  document.getElementById('b-image-name').textContent = '未选择';
+  document.getElementById('b-image-clear').style.display = 'none';
+  updatePreview();
+}
+
+function updatePreview() {
+  const name = document.getElementById('b-name').value || '勋章预览';
+  const icon = document.getElementById('b-icon').value || '🏅';
+  const color = document.getElementById('b-color').value || '#7f5af0';
+  const image = document.getElementById('b-image').value;
+  const previewIcon = document.getElementById('preview-icon');
+  previewIcon.style.background = color + '20';
+  if (image) {
+    previewIcon.innerHTML = `<img src="${image}" style="width:32px;height:32px;object-fit:contain;border-radius:4px">`;
+  } else {
+    previewIcon.textContent = icon;
+  }
+  document.getElementById('preview-name').textContent = name;
+}
+
+function openBadgeModal(data) {
+  document.getElementById('badge-edit-id').value = data?.id || '';
+  document.getElementById('b-name').value = data?.name || '';
+  document.getElementById('b-icon').value = data?.icon || '';
+  document.getElementById('b-image').value = data?.image || '';
+  document.getElementById('b-image-file').value = '';
+  if (data?.image) {
+    document.getElementById('b-image-name').textContent = '已有图片';
+    document.getElementById('b-image-clear').style.display = '';
+  } else {
+    document.getElementById('b-image-name').textContent = '未选择';
+    document.getElementById('b-image-clear').style.display = 'none';
+  }
+  document.getElementById('b-color').value = data?.color || '#7f5af0';
+  document.getElementById('b-color-pick').value = data?.color || '#7f5af0';
+  document.getElementById('b-desc').value = data?.desc || '';
+  document.getElementById('b-score').value = data?.score || '';
+  document.getElementById('b-category').value = data?.category || '';
+  document.getElementById('badge-modal-title').textContent = data ? '编辑勋章' : '新建勋章';
+  updatePreview();
+  document.getElementById('badge-modal').classList.add('show');
+}
+function closeBadgeModal() { document.getElementById('badge-modal').classList.remove('show'); }
+
+function editBadge(id) {
+  const b = allBadges.find(x => x.id === id);
+  if (!b) return;
+  openBadgeModal({ id, name: b.fields['名称'], icon: b.fields['图标'], image: b.fields['勋章图片'], color: b.fields['颜色'], desc: b.fields['描述'], score: b.fields['价值分'], category: b.fields['分类'] });
+}
+
+async function saveBadge() {
+  const name = document.getElementById('b-name').value.trim();
+  if (!name) return alert('勋章名称必填');
+  const fields = {
+    '名称': name, '图标': document.getElementById('b-icon').value.trim() || '🏅',
+    '勋章图片': document.getElementById('b-image').value,
+    '颜色': document.getElementById('b-color').value.trim() || '#7f5af0',
+    '描述': document.getElementById('b-desc').value.trim(),
+    '价值分': parseInt(document.getElementById('b-score').value) || 0,
+    '分类': document.getElementById('b-category').value.trim() || '未分类',
+  };
+  const editId = document.getElementById('badge-edit-id').value;
+  try {
+    if (editId) { await teableUpdate(TABLE_BADGE, editId, fields); toast('勋章已更新'); }
+    else { fields['创建时间'] = new Date().toISOString(); await teableCreate(TABLE_BADGE, fields); toast('勋章创建成功'); }
+    closeBadgeModal(); loadAll();
+  } catch(e) { toast('操作失败: ' + e.message, 'error'); }
+}
+
+async function deleteBadge(id, name) {
+  if (!confirm(`确定删除勋章「${name}」？`)) return;
+  try { await teableDelete(TABLE_BADGE, id); toast('勋章已删除'); loadAll(); }
+  catch(e) { toast('删除失败', 'error'); }
+}
+
+// ─── Awards ─────────────────────────────────────────────────
+function renderAwards() {
+  if (allAwards.length === 0) {
+    document.getElementById('awards-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎖️</div><p>还没有授予记录</p></div>';
+    return;
+  }
+  const userMap = {};
+  allUsers.forEach(u => { userMap[u.fields['账号']] = u.fields['昵称']; });
+  const html = `<table class="data-table">
+    <thead><tr><th>成员</th><th>勋章</th><th>授予者</th><th>时间</th><th>备注</th><th>操作</th></tr></thead>
+    <tbody>${allAwards.map(a => {
+      const f = a.fields;
+      const date = f['授予时间'] ? new Date(f['授予时间']).toLocaleDateString('zh-CN') : '-';
+      return `<tr>
+        <td><b>${userMap[f['账号']]||f['账号']}</b></td>
+        <td>${f['勋章名称']}</td>
+        <td style="color:var(--text-secondary)">${userMap[f['授予者']]||f['授予者']||'-'}</td>
+        <td style="color:var(--text-muted)">${date}</td>
+        <td style="color:var(--text-secondary)">${f['备注']||'-'}</td>
+        <td><button class="btn-sm btn-danger-sm" onclick="revokeAward('${a.id}')">撤销</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+  document.getElementById('awards-content').innerHTML = html;
+}
+
+function openAwardModal() {
+  const activeUsers = allUsers.filter(u => u.fields['状态'] === '已激活');
+  document.getElementById('a-user').innerHTML = activeUsers.map(u =>
+    `<option value="${u.fields['账号']}">${u.fields['昵称']} (${u.fields['账号']})</option>`
+  ).join('');
+  document.getElementById('a-badge').innerHTML = allBadges.map(b =>
+    `<option value="${b.fields['名称']}">${b.fields['图标']||'🏅'} ${b.fields['名称']}</option>`
+  ).join('');
+  document.getElementById('a-note').value = '';
+  document.getElementById('award-modal').classList.add('show');
+}
+function closeAwardModal() { document.getElementById('award-modal').classList.remove('show'); }
+
+async function saveAward() {
+  const account = document.getElementById('a-user').value;
+  const badgeName = document.getElementById('a-badge').value;
+  if (!account || !badgeName) return alert('请选择成员和勋章');
+  const dup = allAwards.find(a => a.fields['账号'] === account && a.fields['勋章名称'] === badgeName);
+  if (dup) return toast('该成员已拥有此勋章', 'error');
+  try {
+    await teableCreate(TABLE_AWARD, {
+      '账号': account, '勋章名称': badgeName, '授予者': user.account,
+      '授予时间': new Date().toISOString(), '备注': document.getElementById('a-note').value.trim(),
+    });
+    toast('勋章授予成功'); closeAwardModal(); loadAll();
+  } catch(e) { toast('授予失败: ' + e.message, 'error'); }
+}
+
+async function revokeAward(id) {
+  if (!confirm('确定撤销此勋章？')) return;
+  try { await teableDelete(TABLE_AWARD, id); toast('勋章已撤销'); loadAll(); }
+  catch(e) { toast('撤销失败', 'error'); }
+}
+
+// ─── Members View ───────────────────────────────────────────
+let membersData = [];
+let currentMemberSort = 'earned';
+
+function renderMembersView() {
+  const badgeMap = {};
+  allBadges.forEach(b => { badgeMap[b.fields['名称']] = b; });
+  const activeUsers = allUsers.filter(u => u.fields['状态'] === '已激活');
+
+  membersData = activeUsers.map(u => {
+    const account = u.fields['账号'];
+    const nickname = u.fields['昵称'];
+
+    const manualAwards = allAwards.filter(a => a.fields['账号'] === account);
+    const manualScore = manualAwards.reduce((sum, a) => {
+      const b = badgeMap[a.fields['勋章名称']];
+      return sum + (b?.fields['价值分'] || 0);
+    }, 0);
+
+    const contributions = computeUserContributions(account, nickname, allCalEvents, allSkills, allPartners, allWebApps, allWishes);
+    const achievements = generateAchievementBadges(contributions);
+
+    const totalContrib = contributions.sharer + contributions.skills + contributions.partners + contributions.web + contributions.agent + manualScore;
+
+    return { account, nickname, manualAwards, achievements, contributions, manualScore, totalContrib, earnedCount: achievements.earned.length, badgeMap };
+  });
+
+  sortMembers(currentMemberSort);
+}
+
+function sortMembers(sortBy, el) {
+  currentMemberSort = sortBy;
+  if (el) {
+    document.querySelectorAll('#panel-members .filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  const sorted = [...membersData];
+  if (sortBy === 'earned') sorted.sort((a, b) => b.earnedCount - a.earnedCount);
+  else if (sortBy === 'total') sorted.sort((a, b) => b.totalContrib - a.totalContrib);
+
+  if (sorted.length === 0) {
+    document.getElementById('members-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>暂无已激活成员</p></div>';
+    return;
+  }
+
+  const rankMedals = ['🥇', '🥈', '🥉'];
+  const html = sorted.map((m, i) => {
+    const bm = m.badgeMap;
+    const initial = (m.nickname || m.account).charAt(0).toUpperCase();
+    const medal = i < 3 ? `<span style="font-size:20px;margin-right:4px">${rankMedals[i]}</span>` : `<span style="font-size:11px;color:var(--text-muted);font-weight:600;margin-right:8px">#${i+1}</span>`;
+
+    const achievementChips = m.achievements.earned.map(ab => {
+      return `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:16px;font-size:12px;font-weight:500;background:${ab.color}18;border:1px solid ${ab.color}35;color:${ab.color}">${ab.icon} ${ab.fullName}</span>`;
+    }).join('');
+
+    const manualChips = m.manualAwards.map(a => {
+      const b = bm[a.fields['勋章名称']];
+      const icon = b?.fields['图标'] || '🏅';
+      const color = b?.fields['颜色'] || '#7f5af0';
+      return `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:16px;font-size:12px;font-weight:500;background:${color}12;border:1px solid ${color}30;color:${color}">${icon} ${a.fields['勋章名称']}</span>`;
+    }).join('');
+
+    const allChips = achievementChips + manualChips || '<span style="color:var(--text-muted);font-size:12px;font-style:italic">暂无勋章</span>';
+    const totalBadges = m.achievements.earned.length + m.manualAwards.length;
+
+    const c = m.contributions;
+    const contribBar = `<div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--text-muted)">
+      <span>📅 ${c.sharer}</span><span>🛠️ ${c.skills}</span><span>🤖 ${c.partners}</span><span>🌐 ${c.web}</span><span>🧠 ${c.agent}</span>
+      ${m.manualScore > 0 ? `<span>🏅 +${m.manualScore}</span>` : ''}
+    </div>`;
+
+    return `<div style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:18px;padding:22px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px;flex-shrink:0">${initial}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px">${medal}${m.nickname||m.account}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${totalBadges} 枚勋章（成就 ${m.achievements.earned.length} + 授予 ${m.manualAwards.length}）</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <span style="font-size:12px;font-weight:700;color:var(--accent-light);background:rgba(127,90,240,0.12);padding:5px 12px;border-radius:16px">${m.earnedCount}/25</span>
+          <span style="font-size:12px;font-weight:700;color:var(--accent2);background:rgba(44,182,125,0.12);padding:5px 12px;border-radius:16px">贡献 ${m.totalContrib}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${allChips}</div>
+      ${contribBar}
+    </div>`;
+  }).join('');
+
+  document.getElementById('members-content').innerHTML = html;
+}
+
+// ─── Wishes Admin ──────────────────────────────────────────
+function renderWishesAdmin() {
+  const userMap = {};
+  allUsers.forEach(u => { userMap[u.fields['账号']] = u.fields['昵称']; });
+
+  const total = allWishes.filter(w => w.fields['状态'] !== '已撤回').length;
+  const pending = allWishes.filter(w => w.fields['状态'] === '待审核').length;
+  const approved = allWishes.filter(w => w.fields['状态'] === '已通过').length;
+  const claimed = allWishes.filter(w => w.fields['状态'] === '已领取').length;
+  const done = allWishes.filter(w => w.fields['状态'] === '已完成').length;
+
+  document.getElementById('wishes-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${total}</div><div class="stat-label">总愿望</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px;color:var(--warning)">${pending}</div><div class="stat-label">待审核</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${approved}</div><div class="stat-label">待认领</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${claimed}</div><div class="stat-label">进行中</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px;color:var(--success)">${done}</div><div class="stat-label">已完成</div></div>
+  `;
+
+  const wishes = [...allWishes]
+    .filter(w => w.fields['状态'] !== '已撤回')
+    .sort((a, b) => {
+      const order = { '待审核': 0, '已通过': 1, '已领取': 2, '已完成': 3, '已拒绝': 4 };
+      return (order[a.fields['状态']]??9) - (order[b.fields['状态']]??9);
+    });
+
+  if (wishes.length === 0) {
+    document.getElementById('wishes-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🌟</div><p>暂无愿望</p></div>';
+    return;
+  }
+
+  const statusStyle = { '待审核': 'status-pending', '已通过': 'status-active', '已领取': 'status-active', '已完成': 'status-active', '已拒绝': 'status-disabled' };
+
+  document.getElementById('wishes-content').innerHTML = `<table class="data-table">
+    <thead><tr><th>标题</th><th>提交者</th><th>状态</th><th>领取者</th><th>提交时间</th><th>显示</th><th>操作</th></tr></thead>
+    <tbody>${wishes.map(w => {
+      const f = w.fields;
+      const submitter = userMap[f['提交者']] || f['提交者'] || '-';
+      const claimer = f['领取者'] ? (userMap[f['领取者']] || f['领取者']) : '-';
+      const date = (f['提交时间']||'').slice(0, 10);
+      const isShown = f['显示'] === '是';
+      const showTag = isShown ? '<span style="color:var(--success)">是</span>' : '<span style="color:var(--text-muted)">否</span>';
+      let actions = '';
+      // 待审核：通过/拒绝
+      if (f['状态'] === '待审核') {
+        actions += `<button class="btn-sm btn-success-sm" onclick="adminApproveWish('${w.id}')">通过</button>
+                    <button class="btn-sm btn-danger-sm" onclick="adminRejectWish('${w.id}')">拒绝</button>`;
+      }
+      // 所有非待审核状态：显示/隐藏切换
+      if (f['状态'] !== '待审核') {
+        const toggleVal = isShown ? '否' : '是';
+        const toggleText = isShown ? '隐藏' : '显示';
+        actions += `<button class="btn-sm btn-ghost" onclick="adminToggleShow('${w.id}','${toggleVal}')">${toggleText}</button>`;
+      }
+      // 所有愿望：删除
+      actions += `<button class="btn-sm btn-danger-sm" onclick="adminDeleteWish('${w.id}','${(f['标题']||'').replace(/'/g,'')}')">删除</button>`;
+      return `<tr>
+        <td><b>${f['标题']||'-'}</b></td>
+        <td>${submitter}</td>
+        <td><span class="status ${statusStyle[f['状态']]||''}">${f['状态']}</span></td>
+        <td style="color:var(--text-secondary)">${claimer}</td>
+        <td style="color:var(--text-muted)">${date}</td>
+        <td>${showTag}</td>
+        <td class="actions-cell">${actions}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+async function adminApproveWish(id) {
+  await teableUpdate(TABLE_WISH, id, { '状态': '已通过', '显示': '是' });
+  toast('已通过，已加入许愿池'); loadAll();
+}
+async function adminRejectWish(id) {
+  if (!confirm('确定拒绝？')) return;
+  await teableUpdate(TABLE_WISH, id, { '状态': '已拒绝' });
+  toast('已拒绝'); loadAll();
+}
+async function adminToggleShow(id, val) {
+  await teableUpdate(TABLE_WISH, id, { '显示': val });
+  toast(val === '是' ? '已设为显示' : '已隐藏'); loadAll();
+}
+async function adminDeleteWish(id, title) {
+  if (!confirm('确定删除愿望「' + title + '」？')) return;
+  try { await teableDelete(TABLE_WISH, id); toast('已删除'); loadAll(); }
+  catch(e) { toast('删除失败', 'error'); }
+}
+
+// ─── Calendar Subscription Stats ────────────────────────────
+function renderCalendarStats() {
+  const userMap = {};
+  allUsers.forEach(u => { userMap[u.fields['账号']] = u.fields['昵称']; });
+
+  // Sort events by start time
+  const events = [...allCalEvents].sort((a, b) => (a.fields['开始时间']||'').localeCompare(b.fields['开始时间']||''));
+
+  // Stats summary
+  const totalEvents = events.length;
+  const totalSubs = events.reduce((sum, e) => {
+    const s = (e.fields['订阅者']||'').split(',').filter(Boolean);
+    return sum + s.length;
+  }, 0);
+
+  // User subscription count: how many events each user subscribed to
+  const userSubCount = {};
+  events.forEach(e => {
+    const subs = (e.fields['订阅者']||'').split(',').filter(Boolean);
+    subs.forEach(acc => { userSubCount[acc] = (userSubCount[acc]||0) + 1; });
+  });
+  const userRanking = Object.entries(userSubCount)
+    .map(([acc, count]) => ({ acc, name: userMap[acc]||acc, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Summary cards
+  let statsHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px">
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${totalEvents}</div><div class="stat-label">总活动数</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${totalSubs}</div><div class="stat-label">总订阅次数</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${userRanking.length}</div><div class="stat-label">参与人数</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:28px">${totalEvents ? (totalSubs/totalEvents).toFixed(1) : 0}</div><div class="stat-label">平均订阅/活动</div></div>
+  </div>`;
+
+  // User ranking
+  if (userRanking.length > 0) {
+    const rankMedals = ['🥇','🥈','🥉'];
+    statsHtml += `<div style="font-size:15px;font-weight:700;margin-bottom:12px">成员订阅排行</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
+      ${userRanking.map((u, i) => {
+        const medal = i < 3 ? rankMedals[i]+' ' : '';
+        return `<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:16px;font-size:13px;font-weight:500;background:var(--bg-card);border:1px solid var(--glass-border)">
+          ${medal}<b>${u.name}</b><span style="color:var(--accent-light);font-weight:700">${u.count}</span>
+        </span>`;
+      }).join('')}
+    </div>`;
+  }
+
+  document.getElementById('calendar-stats').innerHTML = statsHtml;
+
+  // Detail table: each event with its subscribers
+  if (events.length === 0) {
+    document.getElementById('calendar-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><p>暂无活动数据</p></div>';
+    return;
+  }
+
+  const tableHtml = `<table class="data-table">
+    <thead><tr><th>活动</th><th>时间</th><th>类型</th><th>订阅人数</th><th>订阅成员</th></tr></thead>
+    <tbody>${events.map(e => {
+      const f = e.fields;
+      const subs = (f['订阅者']||'').split(',').filter(Boolean);
+      const subNames = subs.map(acc => userMap[acc]||acc);
+      const start = f['开始时间'] ? new Date(f['开始时间']) : null;
+      const dateStr = start ? `${start.getMonth()+1}/${start.getDate()}` : '-';
+      const subChips = subNames.length > 0
+        ? subNames.map(n => `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:rgba(127,90,240,0.12);color:var(--accent-light);margin:2px">${n}</span>`).join('')
+        : '<span style="color:var(--text-muted);font-size:12px">无人订阅</span>';
+      return `<tr>
+        <td><b>${f['标题']||'-'}</b></td>
+        <td style="color:var(--text-secondary);white-space:nowrap">${dateStr}</td>
+        <td style="color:var(--text-secondary)">${f['活动类型']||'-'}</td>
+        <td><span style="color:var(--accent-light);font-weight:700">${subs.length}</span></td>
+        <td style="max-width:300px">${subChips}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+  document.getElementById('calendar-content').innerHTML = tableHtml;
+}
+
+// ─── Achievement Config ────────────────────────────────────
+function renderAchConfig() {
+  // 类别列表（可编辑卡片）
+  const catsHtml = achCatRecords
+    .sort((a, b) => (a.fields['排序']||0) - (b.fields['排序']||0))
+    .map(c => {
+      const f = c.fields;
+      return `<div style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px">
+        <span style="font-size:28px;width:40px;text-align:center">${f['图标']||'🏅'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${f['名称']||'-'}</div>
+          <div style="font-size:11px;color:var(--text-muted)">key: ${f['key']} · 颜色: <span style="color:${f['颜色']}">${f['颜色']}</span></div>
+        </div>
+        <button class="btn-sm btn-accent" onclick="editAchCat('${c.id}')">编辑</button>
+      </div>`;
+    }).join('');
+  document.getElementById('ach-cats-list').innerHTML = catsHtml || '<p style="color:var(--text-muted)">暂无类别</p>';
+
+  // 等级列表
+  const tiersHtml = achTierRecords
+    .sort((a, b) => (a.fields['等级']||0) - (b.fields['等级']||0))
+    .map(t => {
+      const f = t.fields;
+      return `<div style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px">
+        <span style="font-size:18px;font-weight:800;color:var(--accent-light);width:30px;text-align:center">Lv${f['等级']}</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">${f['名称']||'-'}</div>
+          <div style="font-size:11px;color:var(--text-muted)">阈值: ${f['阈值']} 项成果</div>
+        </div>
+        <button class="btn-sm btn-accent" onclick="editAchTier('${t.id}')">编辑</button>
+      </div>`;
+    }).join('');
+  document.getElementById('ach-tiers-list').innerHTML = tiersHtml || '<p style="color:var(--text-muted)">暂无等级</p>';
+
+  // 5×5 图片网格
+  const sortedCats = achCatRecords.sort((a, b) => (a.fields['排序']||0) - (b.fields['排序']||0));
+  const sortedTiers = achTierRecords.sort((a, b) => (a.fields['等级']||0) - (b.fields['等级']||0));
+  const imgMap = {};
+  achImgRecords.forEach(r => { imgMap[r.fields['类别key'] + '_' + r.fields['等级']] = r; });
+
+  let gridHtml = `<table class="data-table" style="min-width:700px">
+    <thead><tr><th style="width:100px">类别 \\ 等级</th>`;
+  sortedTiers.forEach(t => { gridHtml += `<th style="text-align:center">${t.fields['名称']} (${t.fields['阈值']})</th>`; });
+  gridHtml += `</tr></thead><tbody>`;
+
+  sortedCats.forEach(c => {
+    const ck = c.fields['key'];
+    const color = c.fields['颜色'] || '#7f5af0';
+    gridHtml += `<tr><td><span style="display:flex;align-items:center;gap:6px"><span style="font-size:20px">${c.fields['图标']||''}</span><b>${c.fields['名称']}</b></span></td>`;
+    sortedTiers.forEach(t => {
+      const lv = t.fields['等级'];
+      const mapKey = ck + '_' + lv;
+      const rec = imgMap[mapKey];
+      const img = rec?.fields['勋章图片'] || '';
+      const recId = rec?.id || '';
+      const tierName = t.fields['名称'];
+      gridHtml += `<td style="text-align:center;vertical-align:middle">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div style="width:64px;height:64px;border-radius:12px;background:${color}15;border:1px solid ${color}30;display:flex;align-items:center;justify-content:center;overflow:hidden">
+            ${img ? `<img src="${img}" style="width:56px;height:56px;object-fit:contain">` : `<span style="font-size:11px;color:var(--text-muted)">无图</span>`}
+          </div>
+          <div style="display:flex;gap:4px">
+            <label class="btn-sm btn-ghost" style="cursor:pointer;font-size:11px;padding:3px 10px">
+              上传
+              <input type="file" accept="image/*" style="display:none" onchange="uploadAchImg(this,'${recId}','${ck}',${lv})">
+            </label>
+            ${img ? `<button class="btn-sm btn-danger-sm" style="font-size:11px;padding:3px 8px" onclick="deleteAchImg('${recId}')">删除</button>` : ''}
+          </div>
+        </div>
+      </td>`;
+    });
+    gridHtml += `</tr>`;
+  });
+  gridHtml += `</tbody></table>`;
+  document.getElementById('ach-img-grid').innerHTML = gridHtml;
+}
+
+async function deleteAchImg(recId) {
+  if (!confirm('确定删除此图片？')) return;
+  try {
+    await teableUpdate(TABLE_ACH_IMG, recId, { '勋章图片': '' });
+    toast('图片已删除'); loadAll();
+  } catch(e) { toast('删除失败: ' + e.message, 'error'); }
+}
+
+function uploadAchImg(input, recId, catKey, level) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) { toast('图片不能超过 500KB', 'error'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const base64 = e.target.result;
+    try {
+      if (recId) {
+        await teableUpdate(TABLE_ACH_IMG, recId, { '勋章图片': base64 });
+      } else {
+        await teableCreate(TABLE_ACH_IMG, { '类别key': catKey, '等级': level, '勋章图片': base64 });
+      }
+      toast('图片已上传');
+      loadAll();
+    } catch(err) { toast('上传失败: ' + err.message, 'error'); }
+  };
+  reader.readAsDataURL(file);
+}
+
+function editAchCat(id) {
+  const rec = achCatRecords.find(r => r.id === id);
+  if (!rec) return;
+  const f = rec.fields;
+  const name = prompt('类别名称', f['名称']||'');
+  if (name === null) return;
+  const icon = prompt('图标 (emoji)', f['图标']||'');
+  if (icon === null) return;
+  const color = prompt('颜色 (如 #f59e0b)', f['颜色']||'');
+  if (color === null) return;
+  teableUpdate(TABLE_ACH_CAT, id, { '名称': name, '图标': icon, '颜色': color })
+    .then(() => { toast('类别已更新'); loadAll(); })
+    .catch(e => toast('更新失败: ' + e.message, 'error'));
+}
+
+function editAchTier(id) {
+  const rec = achTierRecords.find(r => r.id === id);
+  if (!rec) return;
+  const f = rec.fields;
+  const name = prompt('等级名称', f['名称']||'');
+  if (name === null) return;
+  const threshold = prompt('阈值（达到多少项成果解锁）', f['阈值']||'');
+  if (threshold === null) return;
+  teableUpdate(TABLE_ACH_TIER, id, { '名称': name, '阈值': parseInt(threshold)||1 })
+    .then(() => { toast('等级已更新'); loadAll(); })
+    .catch(e => toast('更新失败: ' + e.message, 'error'));
+}
+</script>
+</div><!-- /main-area -->
+</div><!-- /app-shell -->
+</body>
+</html>

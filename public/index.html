@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · AI共创</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; }
+  .card-wrap { position: relative; z-index: 10; width: 420px; }
+  .card {
+    background: rgba(26,25,50,0.85);
+    backdrop-filter: blur(32px) saturate(150%);
+    -webkit-backdrop-filter: blur(32px) saturate(150%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 44px 40px 36px;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+  .logo-icon {
+    width: 42px; height: 42px;
+    background: #2a2d4a;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #fffffe; }
+
+  .tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.04); border-radius: var(--radius-md); padding: 4px; margin-bottom: 28px; }
+  .tab {
+    flex: 1; padding: 10px; border: none; background: transparent;
+    color: var(--text-muted); font-family: inherit; font-size: 13px;
+    font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.25s;
+  }
+  .tab.active { background: rgba(127,90,240,0.2); color: var(--accent-light); box-shadow: 0 0 16px rgba(127,90,240,0.15); }
+  .tab:hover:not(.active) { color: var(--text-secondary); }
+
+  .form-panel { display: none; }
+  .form-panel.active { display: block; animation: fadeSlideUp 0.3s ease; }
+
+  .card-footer {
+    margin-top: 24px; padding-top: 18px;
+    border-top: 1px solid var(--border);
+    text-align: center; font-size: 12px; color: var(--text-muted);
+  }
+
+  .btn-guest {
+    background: transparent; border: 1px solid var(--glass-border);
+    color: var(--text-muted); font-family: inherit; font-size: 14px;
+    font-weight: 600; padding: 12px; border-radius: var(--radius-md);
+    cursor: pointer; transition: all 0.25s;
+  }
+  .btn-guest:hover { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+
+  /* Floating particles */
+  .particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  .particle {
+    position: absolute; border-radius: 50%;
+    background: var(--accent); opacity: 0.1;
+    animation: float linear infinite;
+  }
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 0.15; }
+    90% { opacity: 0.15; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora-bg"></div>
+<div class="particles" id="particles"></div>
+
+<div class="card-wrap">
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">🏅</div>
+      <div class="logo-text">集团仓储管理部AI共创</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">登 录</button>
+      <button class="tab" onclick="switchTab('register')">注 册</button>
+    </div>
+
+    <div id="panel-login" class="form-panel active">
+      <div class="field">
+        <label>账号</label>
+        <div class="input-wrap">
+          <input id="l-account" type="text" placeholder="输入账号">
+          <span class="input-icon">◈</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <div class="input-wrap">
+          <input id="l-password" type="password" placeholder="输入密码">
+          <span class="input-icon">◉</span>
+          <button class="eye-btn" type="button" onclick="togglePwd('l-password',this)">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-login" style="width:100%;margin-top:8px" onclick="doLogin()">
+        <span class="btn-text">登 录</span><div class="spinner"></div>
+      </button>
+      <button class="btn btn-guest" style="width:100%;margin-top:8px" onclick="guestEnter()">
+        <span class="btn-text">游客进入</span>
+      </button>
+      <div class="msg" id="msg-login"></div>
+    </div>
+
+    <div id="panel-register" class="form-panel">
+      <div class="field">
+        <label>昵称</label>
+        <div class="input-wrap">
+          <input id="r-nickname" type="text" placeholder="显示名称">
+          <span class="input-icon">✦</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>账号</label>
+        <div class="input-wrap">
+          <input id="r-account" type="text" placeholder="设置登录账号">
+          <span class="input-icon">◈</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <div class="input-wrap">
+          <input id="r-password" type="password" placeholder="至少6位">
+          <span class="input-icon">◉</span>
+          <button class="eye-btn" type="button" onclick="togglePwd('r-password',this)">👁</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>确认密码</label>
+        <div class="input-wrap">
+          <input id="r-confirm" type="password" placeholder="再次输入">
+          <span class="input-icon">◉</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-register" style="width:100%;margin-top:8px" onclick="doRegister()">
+        <span class="btn-text">提交注册</span><div class="spinner"></div>
+      </button>
+      <div class="msg" id="msg-register"></div>
+    </div>
+
+    <div class="card-footer">注册后需管理员审核激活</div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+// Particles
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const s = Math.random() * 4 + 2;
+    p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*15+10}s;animation-delay:${Math.random()*10}s;`;
+    if (Math.random() > 0.5) p.style.background = 'var(--accent2)';
+    c.appendChild(p);
+  }
+})();
+
+if (getCurrentUser()) window.location.href = 'home.html';
+
+function guestEnter() {
+  localStorage.setItem('badge_user', JSON.stringify({
+    id: 'guest', account: 'guest', nickname: '游客', role: '游客'
+  }));
+  window.location.href = 'home.html';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0)===(tab==='login')));
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.querySelectorAll('.msg').forEach(m => { m.className='msg'; });
+}
+function showMsg(id,text,type) { const el=document.getElementById(id); el.textContent=text; el.className='msg '+type+' show'; }
+function setLoading(id,s) { const el=document.getElementById(id); el.classList.toggle('loading',s); el.disabled=s; }
+function togglePwd(id,btn) { const inp=document.getElementById(id); inp.type=inp.type==='password'?'text':'password'; btn.textContent=inp.type==='password'?'👁':'🙈'; }
+
+document.addEventListener('keydown', e => {
+  if (e.key!=='Enter') return;
+  document.querySelector('.form-panel.active').id==='panel-login' ? doLogin() : doRegister();
+});
+
+async function doLogin() {
+  const account = document.getElementById('l-account').value.trim();
+  const password = document.getElementById('l-password').value;
+  if (!account||!password) return showMsg('msg-login','请填写账号和密码','error');
+  setLoading('btn-login',true);
+  try {
+    const user = await findUser(account);
+    if (!user) return showMsg('msg-login','账号或密码错误','error');
+    const f = user.fields;
+    if (f['密码哈希'] !== password) return showMsg('msg-login','账号或密码错误','error');
+    if (f['状态']==='待审核') return showMsg('msg-login','账号待审核，请联系管理员','error');
+    if (f['状态']==='已禁用') return showMsg('msg-login','账号已被禁用','error');
+    if (f['状态']!=='已激活') return showMsg('msg-login','账号状态异常','error');
+    teableUpdate(TABLE_USER, user.id, { '最后登录': new Date().toISOString() });
+    localStorage.setItem('badge_user', JSON.stringify({
+      id: user.id, account: f['账号'], nickname: f['昵称'], role: f['角色']
+    }));
+    showMsg('msg-login','登录成功，正在跳转…','success');
+    setTimeout(() => window.location.href='home.html', 600);
+  } catch(e) { showMsg('msg-login','网络错误: '+e.message,'error'); }
+  finally { setLoading('btn-login',false); }
+}
+
+async function doRegister() {
+  const nickname = document.getElementById('r-nickname').value.trim();
+  const account  = document.getElementById('r-account').value.trim();
+  const password = document.getElementById('r-password').value;
+  const confirm  = document.getElementById('r-confirm').value;
+  if (!nickname||!account||!password) return showMsg('msg-register','请填写完整信息','error');
+  if (password.length<6) return showMsg('msg-register','密码至少6位','error');
+  if (password!==confirm) return showMsg('msg-register','两次密码不一致','error');
+  setLoading('btn-register',true);
+  try {
+    const existing = await findUser(account);
+    if (existing) return showMsg('msg-register','账号已存在','error');
+    await teableCreate(TABLE_USER, {
+      '账号': account, '昵称': nickname, '密码哈希': password,
+      '状态': '待审核', '角色': '普通用户', '注册时间': new Date().toISOString(),
+    });
+    showMsg('msg-register','注册成功，请等待管理员激活','success');
+    ['r-nickname','r-account','r-password','r-confirm'].forEach(id => document.getElementById(id).value='');
+  } catch(e) { showMsg('msg-register','注册失败: '+e.message,'error'); }
+  finally { setLoading('btn-register',false); }
+}
+</script>
+</body>
+</html>

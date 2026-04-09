@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>许愿池 · AI共创</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .page-header { margin-bottom: 14px; animation: fadeSlideUp 0.5s ease; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .page-left .page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 2px; }
+  .page-left .page-desc { color: var(--text-secondary); font-size: 13px; }
+
+  .wish-container { display: flex; flex-direction: column; height: calc(100vh - 56px); padding: 16px 24px; overflow: hidden; position: relative; z-index: 1; }
+
+  .stats-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    margin-bottom: 14px; animation: fadeSlideUp 0.55s ease; flex-shrink: 0;
+  }
+  .mini-stat {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 12px; text-align: center;
+  }
+  .mini-stat-num { font-size: 20px; font-weight: 800; color: var(--accent-light); }
+  .mini-stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Wish pool container — fills remaining space */
+  .wish-pool {
+    position: relative; flex: 1; min-height: 0; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 80%, rgba(127,90,240,0.06) 0%, transparent 70%);
+    border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+    animation: fadeSlideUp 0.6s ease;
+  }
+  .wish-pool-empty {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 14px; pointer-events: none;
+  }
+
+  /* Wish bubble */
+  .wish-bubble {
+    position: absolute; cursor: pointer;
+    padding: 12px 20px; border-radius: 24px;
+    font-size: 13px; font-weight: 600; white-space: nowrap;
+    max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: bubble-float var(--dur) ease-in-out infinite;
+    animation-delay: var(--delay);
+  }
+  .wish-bubble:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 0 24px var(--bubble-glow);
+    z-index: 10;
+  }
+
+  /* Bubble status colors */
+  .bubble-approved {
+    background: rgba(127,90,240,0.15); border: 1px solid rgba(127,90,240,0.3);
+    color: var(--accent-light); --bubble-glow: rgba(127,90,240,0.4);
+  }
+  .bubble-claimed {
+    background: rgba(44,182,125,0.15); border: 1px solid rgba(44,182,125,0.3);
+    color: var(--accent2); --bubble-glow: rgba(44,182,125,0.4);
+  }
+  .bubble-done {
+    background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3);
+    color: #fbbf24; --bubble-glow: rgba(251,191,36,0.4);
+  }
+
+  @keyframes bubble-float {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(var(--dx1), var(--dy1)); }
+    50% { transform: translate(var(--dx2), var(--dy2)); }
+    75% { transform: translate(var(--dx3), var(--dy3)); }
+  }
+
+  /* Pending list — overlay at bottom of pool */
+  .pending-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
+    background: rgba(15,14,23,0.85); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--glass-border);
+    padding: 12px 16px; border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    animation: fadeSlideUp 0.3s ease;
+  }
+  .pending-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .pending-card {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 16px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .pending-info { flex: 1; min-width: 0; }
+  .pending-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .pending-info p { font-size: 12px; color: var(--text-muted); }
+  .pending-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* Modal detail */
+  .wish-detail-status {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    font-size: 12px; font-weight: 600; margin-bottom: 12px;
+  }
+  .wish-detail-content { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; white-space: pre-wrap; }
+  .wish-detail-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .wish-detail-meta span { margin-right: 16px; }
+
+  @media (max-width: 640px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="aurora-bg"></div>
+
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="sidebar-brand-icon"></span><span>集团仓储管理部<br>AI共创</span></div>
+  <div class="sidebar-nav">
+    <a class="sidebar-link" href="home.html"><span class="sidebar-link-icon icon-gold">🏠</span><span>首页</span></a>
+    <a class="sidebar-link" href="gallery.html"><span class="sidebar-link-icon">🏅</span><span>勋章墙</span></a>
+    <a class="sidebar-link" href="calendar.html"><span class="sidebar-link-icon">📅</span><span>共创日历</span></a>
+    <a class="sidebar-link" href="achievements.html"><span class="sidebar-link-icon">🏆</span><span>共创成果</span></a>
+    <a class="sidebar-link active" href="wishes.html"><span class="sidebar-link-icon">🌟</span><span>许愿池</span></a>
+    <a class="sidebar-link admin-link" href="admin.html" id="admin-tab"><span class="sidebar-link-icon icon-gold">⚙️</span><span>管理后台</span></a>
+  </div>
+</aside>
+<div class="main-area">
+<div class="topbar">
+  <div class="topbar-right">
+    <span class="topbar-user" id="nav-user"></span>
+    <button class="topbar-btn" onclick="openPwdModal()">改密</button>
+    <button class="topbar-btn" onclick="logout()">退出</button>
+  </div>
+</div>
+
+<div class="wish-container">
+  <div class="page-header">
+    <div class="page-left">
+      <div class="page-title">许愿池</div>
+      <div class="page-desc">许下愿望，等待有缘人实现</div>
+    </div>
+    <button class="btn-sm btn-accent" onclick="openWishModal()" style="padding:8px 18px;font-size:13px">+ 许个愿望</button>
+  </div>
+
+  <div class="stats-row" id="wish-stats"></div>
+
+  <div class="wish-pool" id="wish-pool">
+    <div class="wish-pool-empty" id="pool-empty">许愿池空空如也，快来许个愿望吧</div>
+    <!-- 待审核列表浮在池底部 -->
+    <div class="pending-overlay" id="pending-section" style="display:none">
+      <div class="pending-title" id="pending-title"></div>
+      <div id="pending-list" style="max-height:120px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Submit Wish Modal -->
+<div class="modal-overlay" id="wish-modal">
+  <div class="modal">
+    <h3>许个愿望</h3>
+    <div class="field"><label>愿望标题</label><input id="w-title" type="text" placeholder="一句话描述你的愿望"></div>
+    <div class="field"><label>详细说明</label><textarea id="w-content" placeholder="具体需要什么帮助？" style="min-height:100px"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-sm btn-cancel" onclick="closeWishModal()">取消</button>
+      <button class="btn-sm btn-accent" onclick="submitWish()">提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- Wish Detail Modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal" style="width:480px">
+    <h3 id="detail-title"></h3>
+    <div id="detail-status"></div>
+    <div class="wish-detail-content" id="detail-content"></div>
+    <div class="wish-detail-meta" id="detail-meta"></div>
+    <div class="modal-actions" id="detail-actions"></div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const user = getCurrentUser();
+if (!user) window.location.href = 'index.html';
+else {
+  document.getElementById('nav-user').textContent = user.nickname;
+  if (user.role === '游客') document.querySelector('.topbar-btn[onclick*="openPwdModal"]').style.display = 'none';
+  if (user.role === '管理员') document.getElementById('admin-tab').style.display = 'flex';
+  loadWishes();
+}
+
+let allWishes = [], allUsersMap = {};
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+async function loadWishes() {
+  const [wishes, users] = await Promise.all([teableGet(TABLE_WISH), teableGet(TABLE_USER)]);
+  allWishes = wishes;
+  allUsersMap = {};
+  users.forEach(u => { allUsersMap[u.fields['账号']] = u.fields['昵称']; });
+  renderStats();
+  renderPool();
+  renderPending();
+}
+
+function renderStats() {
+  const total = allWishes.filter(w => w.fields['状态'] !== '已撤回' && w.fields['状态'] !== '已拒绝').length;
+  const waiting = allWishes.filter(w => w.fields['状态'] === '已通过').length;
+  const claimed = allWishes.filter(w => w.fields['状态'] === '已领取').length;
+  const done = allWishes.filter(w => w.fields['状态'] === '已完成').length;
+  document.getElementById('wish-stats').innerHTML = `
+    <div class="mini-stat"><div class="mini-stat-num">${total}</div><div class="mini-stat-label">总愿望</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${waiting}</div><div class="mini-stat-label">待认领</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${claimed}</div><div class="mini-stat-label">进行中</div></div>
+    <div class="mini-stat"><div class="mini-stat-num">${done}</div><div class="mini-stat-label">已实现</div></div>
+  `;
+}
+
+function renderPool() {
+  const pool = document.getElementById('wish-pool');
+  // 清除旧气泡
+  pool.querySelectorAll('.wish-bubble').forEach(el => el.remove());
+
+  // 飘动的愿望：显示=是 的所有愿望（由管理员控制）
+  const floating = allWishes.filter(w => {
+    return w.fields['显示'] === '是';
+  });
+
+  document.getElementById('pool-empty').style.display = floating.length === 0 ? '' : 'none';
+
+  const poolW = pool.offsetWidth;
+  const poolH = pool.offsetHeight;
+  const count = floating.length;
+
+  // 网格分区：算出最优行列数，让气泡均匀分散
+  const cols = Math.ceil(Math.sqrt(count * (poolW / poolH)));
+  const rows = Math.ceil(count / cols);
+  const cellW = poolW / cols;
+  const cellH = poolH / rows;
+
+  floating.forEach((w, i) => {
+    const s = w.fields['状态'];
+    const cls = s === '已通过' ? 'bubble-approved' : s === '已领取' ? 'bubble-claimed' : 'bubble-done';
+    const bubble = document.createElement('div');
+    bubble.className = 'wish-bubble ' + cls;
+    bubble.textContent = w.fields['标题'] || '未命名';
+    bubble.onclick = () => openDetail(w.id);
+
+    // 网格位置 + 随机抖动，保证分散不重叠
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const padX = Math.max((cellW - 180) * 0.15, 10);
+    const padY = Math.max((cellH - 40) * 0.15, 10);
+    const x = col * cellW + padX + Math.random() * Math.max(cellW - 180 - padX * 2, 0);
+    const y = row * cellH + padY + Math.random() * Math.max(cellH - 40 - padY * 2, 0);
+    bubble.style.left = x + 'px';
+    bubble.style.top = y + 'px';
+
+    // 每个气泡不同的飘动速度、延迟和轨迹
+    const dur = 10 + Math.random() * 12;
+    bubble.style.setProperty('--dur', dur + 's');
+    bubble.style.setProperty('--delay', (-Math.random() * dur) + 's');
+    const sign = () => Math.random() > 0.5 ? 1 : -1;
+    bubble.style.setProperty('--dx1', (sign() * (8 + Math.random() * 18)) + 'px');
+    bubble.style.setProperty('--dy1', (sign() * (6 + Math.random() * 14)) + 'px');
+    bubble.style.setProperty('--dx2', (sign() * (6 + Math.random() * 14)) + 'px');
+    bubble.style.setProperty('--dy2', (sign() * (8 + Math.random() * 18)) + 'px');
+    bubble.style.setProperty('--dx3', (sign() * (10 + Math.random() * 16)) + 'px');
+    bubble.style.setProperty('--dy3', (sign() * (5 + Math.random() * 12)) + 'px');
+
+    pool.appendChild(bubble);
+  });
+}
+
+function renderPending() {
+  const isAdmin = user.role === '管理员';
+  // 待审核：管理员看全部，普通用户看自己的
+  const pending = allWishes.filter(w => {
+    if (w.fields['状态'] !== '待审核') return false;
+    return isAdmin || w.fields['提交者'] === user.account;
+  });
+  // 已拒绝/已撤回：仅自己的
+  const rejected = allWishes.filter(w =>
+    (w.fields['状态'] === '已拒绝' || w.fields['状态'] === '已撤回') && w.fields['提交者'] === user.account
+  );
+
+  const all = [...pending, ...rejected];
+  const section = document.getElementById('pending-section');
+  if (all.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  document.getElementById('pending-title').textContent = isAdmin ? '待审核 / 已处理' : '我的愿望';
+
+  document.getElementById('pending-list').innerHTML = all.map(w => {
+    const f = w.fields;
+    const statusColor = f['状态'] === '待审核' ? 'var(--warning)' : f['状态'] === '已拒绝' ? 'var(--danger)' : 'var(--text-muted)';
+    const submitter = allUsersMap[f['提交者']] || f['提交者'];
+    let actions = '';
+    if (f['状态'] === '待审核') {
+      if (isAdmin) {
+        actions = `<button class="btn-sm btn-success-sm" onclick="approveWish('${w.id}')">通过</button>
+                   <button class="btn-sm btn-danger-sm" onclick="rejectWish('${w.id}')">拒绝</button>`;
+      }
+      if (f['提交者'] === user.account) {
+        actions += `<button class="btn-sm btn-ghost" onclick="withdrawWish('${w.id}')">撤回</button>`;
+      }
+    }
+    return `<div class="pending-card">
+      <div class="pending-info">
+        <h4>${f['标题']||'未命名'}</h4>
+        <p>${submitter} · <span style="color:${statusColor}">${f['状态']}</span> · ${(f['提交时间']||'').slice(0,10)}</p>
+      </div>
+      <div class="pending-actions">${actions}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Detail Modal ──────────────────────────────────────────
+function openDetail(id) {
+  const w = allWishes.find(x => x.id === id);
+  if (!w) return;
+  const f = w.fields;
+  const isAdmin = user.role === '管理员';
+  const statusColors = { '已通过': 'rgba(127,90,240,0.2);color:var(--accent-light)', '已领取': 'rgba(44,182,125,0.2);color:var(--accent2)', '已完成': 'rgba(251,191,36,0.2);color:#fbbf24' };
+  const bg = statusColors[f['状态']] || 'rgba(255,255,255,0.1);color:var(--text-muted)';
+
+  document.getElementById('detail-title').textContent = f['标题'] || '未命名';
+  document.getElementById('detail-status').innerHTML = `<span class="wish-detail-status" style="background:${bg}">${f['状态']}</span>`;
+  document.getElementById('detail-content').textContent = f['内容'] || '无详细说明';
+
+  const submitter = allUsersMap[f['提交者']] || f['提交者'];
+  const claimer = f['领取者'] ? (allUsersMap[f['领取者']] || f['领取者']) : '';
+  let meta = `<span>提交者: ${submitter}</span><span>提交时间: ${(f['提交时间']||'').slice(0,10)}</span>`;
+  if (claimer) meta += `<span>领取者: ${claimer}</span>`;
+  if (f['完成时间']) meta += `<span>完成时间: ${(f['完成时间']||'').slice(0,10)}</span>`;
+  document.getElementById('detail-meta').innerHTML = meta;
+
+  // 操作按钮
+  let actions = `<button class="btn-sm btn-cancel" onclick="closeDetailModal()">关闭</button>`;
+  const s = f['状态'];
+  if (s === '已通过') {
+    if (f['提交者'] === user.account) actions += `<button class="btn-sm btn-ghost" onclick="withdrawWish('${w.id}');closeDetailModal()">撤回</button>`;
+    if (f['提交者'] !== user.account) actions += `<button class="btn-sm btn-accent" onclick="claimWish('${w.id}');closeDetailModal()">我来实现</button>`;
+  }
+  if (s === '已领取' && f['领取者'] === user.account) {
+    actions += `<button class="btn-sm btn-ghost" onclick="returnWish('${w.id}');closeDetailModal()">退回</button>`;
+    actions += `<button class="btn-sm btn-success-sm" onclick="completeWish('${w.id}');closeDetailModal()">完成</button>`;
+  }
+  if (s === '已完成' && isAdmin) {
+    const showText = f['显示'] === '是' ? '隐藏' : '显示在池中';
+    const showVal = f['显示'] === '是' ? '否' : '是';
+    actions += `<button class="btn-sm btn-accent" onclick="toggleShow('${w.id}','${showVal}');closeDetailModal()">${showText}</button>`;
+  }
+  document.getElementById('detail-actions').innerHTML = actions;
+  document.getElementById('detail-modal').classList.add('show');
+}
+
+function closeDetailModal() { document.getElementById('detail-modal').classList.remove('show'); }
+
+// ─── Submit Wish ───────────────────────────────────────────
+function openWishModal() {
+  document.getElementById('w-title').value = '';
+  document.getElementById('w-content').value = '';
+  document.getElementById('wish-modal').classList.add('show');
+}
+function closeWishModal() { document.getElementById('wish-modal').classList.remove('show'); }
+
+async function submitWish() {
+  const title = document.getElementById('w-title').value.trim();
+  const content = document.getElementById('w-content').value.trim();
+  if (!title) return toast('请输入愿望标题', 'error');
+  try {
+    await teableCreate(TABLE_WISH, {
+      '标题': title, '内容': content, '提交者': user.account,
+      '状态': '待审核', '提交时间': new Date().toISOString(),
+    });
+    toast('愿望已提交，等待审核');
+    closeWishModal(); loadWishes();
+  } catch(e) { toast('提交失败: ' + e.message, 'error'); }
+}
+
+// ─── Actions ───────────────────────────────────────────────
+async function approveWish(id) {
+  await teableUpdate(TABLE_WISH, id, { '状态': '已通过', '显示': '是' });
+  toast('已通过，已加入许愿池'); loadWishes();
+}
+async function rejectWish(id) {
+  if (!confirm('确定拒绝？')) return;
+  await teableUpdate(TABLE_WISH, id, { '状态': '已拒绝' });
+  toast('已拒绝'); loadWishes();
+}
+async function withdrawWish(id) {
+  await teableUpdate(TABLE_WISH, id, { '状态': '已撤回' });
+  toast('已撤回'); loadWishes();
+}
+async function claimWish(id) {
+  await teableUpdate(TABLE_WISH, id, { '状态': '已领取', '领取者': user.account });
+  toast('已领取，加油实现吧！'); loadWishes();
+}
+async function returnWish(id) {
+  await teableUpdate(TABLE_WISH, id, { '状态': '已通过', '领取者': '' });
+  toast('已退回'); loadWishes();
+}
+async function completeWish(id) {
+  await teableUpdate(TABLE_WISH, id, { '状态': '已完成', '完成时间': new Date().toISOString() });
+  toast('愿望已实现！'); loadWishes();
+}
+async function toggleShow(id, val) {
+  await teableUpdate(TABLE_WISH, id, { '显示': val });
+  toast(val === '是' ? '已设为显示' : '已隐藏'); loadWishes();
+}
+</script>
+</div><!-- /main-area -->
+</div><!-- /app-shell -->
+</body>
+</html>
