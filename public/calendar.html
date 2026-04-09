@@ -61,7 +61,7 @@
   .event-list { display: flex; flex-direction: column; gap: 14px; animation: fadeSlideUp 0.65s ease; }
   .event-card {
     background: var(--bg-card); border: 1px solid var(--glass-border);
-    border-radius: var(--radius-xl); padding: 24px;
+    border-radius: var(--radius-xl); padding: 18px 24px;
     transition: all 0.3s; position: relative; overflow: hidden;
   }
   .event-card:hover { background: var(--bg-card-hover); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -378,7 +378,7 @@ function renderEventCard(event) {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <span class="type-badge" style="background:${tc.bg};color:${tc.color};border:1px solid ${tc.border}">${type}</span>
           <span class="event-status ${status.cls}">${status.icon} ${status.label}</span>
-          ${isAdm ? `<span class="sub-info">${subs.length} 人订阅</span>` : ''}
+          <span class="sub-info">${subs.length} 人订阅</span>
         </div>
         <div class="event-title">${f['标题'] || '未命名活动'}</div>
         <div class="event-time">🕐 ${timeStr}</div>
@@ -400,7 +400,7 @@ function renderEventCard(event) {
             ${!isPast ? (subbed
               ? `<button class="sub-btn subscribed" onclick="toggleSub('${event.id}',false)" onmouseenter="this.textContent='取消订阅'" onmouseleave="this.textContent='✓ 已订阅'">✓ 已订阅</button>`
               : `<button class="sub-btn subscribe" onclick="toggleSub('${event.id}',true)">订阅</button>`
-            ) : '<span style="font-size:12px;color:var(--text-muted)">已结束</span>'}
+            ) : ''}
           </div>
         </div>
       </div>
