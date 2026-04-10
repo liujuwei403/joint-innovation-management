@@ -33,6 +33,7 @@ Pure static frontend — all files in `public/`. No Node.js backend, no bundler,
 | `TABLE_CALENDAR` | 共创日历表 | 标题, 开始时间, 结束时间, 活动类型, 分享者, 订阅者(comma-separated accounts) |
 | `TABLE_SKILLS` | Skills合集 | 名称, 上传者, 功能简介, 触发方式, 版本号 |
 | `TABLE_PARTNERS` | 数字伙伴表 | 编号, 名称, 链接, 功能概述, 使用量, 开发者 |
+| `TABLE_TRACKING` | 操作追踪表 | 时间, 账号, 昵称, 页面, 操作 |
 
 **Creating Teable tables**: Must use Node.js `fetch()` (not curl) to send Chinese field names — Windows bash curl mangles UTF-8 to GBK.
 

@@ -12,6 +12,7 @@ const TABLE_ACH_CAT  = 'tblbQvz1AwKkRZoaXBj';  // 成就类别表
 const TABLE_ACH_TIER = 'tbl05q2jCD5Q9ErYcK5';  // 成就等级表
 const TABLE_ACH_IMG  = 'tblavDgXC3oGmQ687pK';  // 成就勋章图片表
 const TABLE_WISH     = 'tbl35B5sj6WqDOnDqKy';  // 许愿池表
+const TABLE_TRACKING = 'tbll6dJLBRLkrpOWt9b';  // 操作追踪表
 
 const HEADERS = {
   Authorization: `Bearer ${TEABLE_TOKEN}`,
@@ -448,3 +449,40 @@ function renderLockedBadgeCard(badge) {
     ${cat ? `<div class="badge-cat">${cat}</div>` : ''}
   </div>`;
 }
+
+// ─── 点击埋点追踪 ──────────────────────────────────────────────
+function _trackingWrite(fields) {
+  fetch(`${TEABLE_BASE}/api/table/${TABLE_TRACKING}/record`, {
+    method: 'POST', headers: HEADERS,
+    body: JSON.stringify({ fieldKeyType: 'name', records: [{ fields }] }),
+  }).catch(() => {});
+}
+
+function trackClick(action, page) {
+  if (!action) return;
+  const u = getCurrentUser();
+  if (!u && page !== 'index.html') return;
+  _trackingWrite({
+    '时间': new Date().toISOString(),
+    '账号': u?.account || '',
+    '昵称': u?.nickname || '',
+    '页面': page,
+    '操作': action,
+  });
+}
+
+document.addEventListener('click', function(e) {
+  const el = e.target.closest('button, a[href], [onclick]');
+  if (!el) return;
+  const page = location.pathname.split('/').pop() || 'index.html';
+  let action = '';
+  const oc = el.getAttribute('onclick');
+  if (oc) {
+    const m = oc.match(/^(\w+)\(/);
+    if (m) action = m[1];
+  } else if (el.tagName === 'A' && el.getAttribute('href')) {
+    action = 'nav:' + el.getAttribute('href').replace('.html', '');
+  }
+  if (!action) action = 'click:' + (el.textContent || '').trim().substring(0, 20);
+  if (action && action !== 'click:') trackClick(action, page);
+}, true);
