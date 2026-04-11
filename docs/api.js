@@ -377,7 +377,7 @@ function renderMedalVisual(icon, image, color) {
 function renderAchievementCard(badge) {
   const { key, icon, color, tier, fullName, count, badgeName } = badge;
   const image = achievementImageMap[key + '_' + tier.level] || '';
-  const particleCount = tier.level >= 5 ? 6 : tier.level >= 4 ? 4 : tier.level >= 3 ? 3 : 0;
+  const particleCount = tier.level >= 5 ? 8 : tier.level >= 4 ? 6 : tier.level >= 3 ? 5 : tier.level >= 2 ? 3 : 2;
   let particles = '';
   for (let i = 0; i < particleCount; i++) particles += '<span></span>';
 
@@ -385,8 +385,31 @@ function renderAchievementCard(badge) {
     ? `<div class="medal-frame"><div class="medal-ring"></div><div class="medal-inner"><img class="medal-img" src="${image}" alt="" draggable="false"></div></div>`
     : `<div class="medal-frame"><div class="medal-ring"></div><div class="medal-inner"><span class="medal-icon">${icon}</span></div></div>`;
 
+  // 所有等级均渲染 圣光 / 彩虹边框 / 霓虹灯
+  const holyLight = `<div class="holy-light holy-light-${tier.level}"></div>`;
+  const rainbowBorder = '<div class="rainbow-border"></div>';
+  const neonBorder = '<div class="neon-border"></div>';
+
+  // 烟花: Lv1=1, Lv2=2, Lv3=3, Lv4=3, Lv5=4
+  const fwCount = tier.level >= 5 ? 4 : tier.level >= 3 ? 3 : tier.level >= 2 ? 2 : 1;
+  let fireworks = ''; for (let i = 0; i < fwCount; i++) fireworks += '<span></span>';
+
+  // 流星: Lv1=1, Lv2=1, Lv3=2, Lv4=2, Lv5=3
+  const mtCount = tier.level >= 5 ? 3 : tier.level >= 3 ? 2 : 1;
+  let meteors = ''; for (let i = 0; i < mtCount; i++) meteors += '<span></span>';
+
+  // 闪电: Lv3+=1, Lv5=2
+  const ltCount = tier.level >= 5 ? 2 : tier.level >= 3 ? 1 : 0;
+  let lightning = ''; for (let i = 0; i < ltCount; i++) lightning += '<span></span>';
+
   return `<div class="badge-card badge-earned achievement-tier-${tier.level}" style="--badge-color:${color};--badge-glow:${color}50">
-    ${particles ? `<div class="badge-particles">${particles}</div>` : ''}
+    ${rainbowBorder}
+    ${neonBorder}
+    ${particles ? `<div class="badge-particles fire-particles">${particles}</div>` : ''}
+    <div class="firework-particles">${fireworks}</div>
+    <div class="meteor-particles">${meteors}</div>
+    ${ltCount > 0 ? `<div class="lightning-effects">${lightning}</div>` : ''}
+    ${holyLight}
     ${visual}
     <div class="badge-name">${fullName}</div>
     <div class="badge-stars">${renderStars(tier.stars, 5, color)}</div>
@@ -422,8 +445,30 @@ function renderBadgeCard(award, badgeMap) {
   const tier = getBadgeTier(score);
   const isLegendary = score >= 50;
 
-  return `<div class="badge-card badge-earned" style="--badge-color:${color};--badge-glow:${color}50">
-    ${isLegendary ? '<div class="badge-particles"><span></span><span></span><span></span><span></span></div>' : ''}
+  // 根据价值分映射特效等级
+  const effectTier = score >= 50 ? 5 : score >= 30 ? 4 : score >= 10 ? 3 : score >= 3 ? 2 : 1;
+
+  const pCount = score >= 50 ? 6 : score >= 30 ? 4 : score >= 10 ? 3 : 2;
+  let fireParticles = '';
+  for (let i = 0; i < pCount; i++) fireParticles += '<span></span>';
+
+  const fwCount = effectTier >= 5 ? 4 : effectTier >= 3 ? 3 : effectTier >= 2 ? 2 : 1;
+  let fireworks = ''; for (let i = 0; i < fwCount; i++) fireworks += '<span></span>';
+
+  const mtCount = effectTier >= 5 ? 3 : effectTier >= 3 ? 2 : 1;
+  let meteors = ''; for (let i = 0; i < mtCount; i++) meteors += '<span></span>';
+
+  const ltCount = effectTier >= 5 ? 2 : effectTier >= 3 ? 1 : 0;
+  let lightning = ''; for (let i = 0; i < ltCount; i++) lightning += '<span></span>';
+
+  return `<div class="badge-card badge-earned achievement-tier-${effectTier}" style="--badge-color:${color};--badge-glow:${color}50">
+    <div class="rainbow-border"></div>
+    <div class="neon-border"></div>
+    <div class="badge-particles fire-particles">${fireParticles}</div>
+    <div class="firework-particles">${fireworks}</div>
+    <div class="meteor-particles">${meteors}</div>
+    ${ltCount > 0 ? `<div class="lightning-effects">${lightning}</div>` : ''}
+    <div class="holy-light holy-light-${effectTier}"></div>
     ${renderMedalVisual(icon, image, color)}
     <div class="badge-name">${award.fields['勋章名称']}</div>
     <div class="badge-stars">${renderStars(tier.stars, 5, color)}</div>
