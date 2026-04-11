@@ -15,6 +15,24 @@
     background: rgba(127,90,240,0.15); color: var(--accent-light);
   }
 
+  /* ─── Gallery Tabs ─── */
+  .gallery-tabs {
+    display: flex; gap: 4px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 4px;
+    margin-bottom: 24px; animation: fadeSlideUp 0.4s ease;
+  }
+  .gallery-tab {
+    padding: 10px 28px; border: none; background: transparent;
+    color: var(--text-muted); font-family: inherit; font-size: 14px;
+    font-weight: 700; border-radius: 10px; cursor: pointer; transition: all 0.25s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .gallery-tab.active { background: rgba(127,90,240,0.2); color: var(--accent-light); }
+  .gallery-tab:hover:not(.active) { color: var(--text-secondary); }
+  .gallery-panel { display: none; animation: fadeSlideUp 0.3s ease; }
+  .gallery-panel.active { display: block; }
+
   .toolbar {
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
     margin-bottom: 24px; animation: fadeSlideUp 0.55s ease;
@@ -34,9 +52,56 @@
 
   .skeleton-card { height: 200px; border-radius: var(--radius-lg); }
 
+  /* ─── 全员勋章 member cards ─── */
+  .member-badge-grid {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    padding: 4px 0; overflow: visible; position: relative;
+  }
+  .member-badge-grid .badge-card {
+    transform: scale(0.52);
+    transform-origin: top left;
+    width: 160px;
+    margin-right: -76px;
+    margin-bottom: -70px;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 1;
+    cursor: pointer;
+  }
+  .member-badge-grid .badge-card:hover {
+    transform: scale(1.02) translateY(-8px);
+    z-index: 100;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 60px var(--badge-glow, var(--accent-glow));
+    margin-right: 8px;
+  }
+  .member-badge-grid .badge-card .badge-name {
+    font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .member-badge-grid .badge-card .badge-cat,
+  .member-badge-grid .badge-card .badge-date {
+    font-size: 11px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .member-no-badge {
+    color: var(--text-muted); font-size: 12px; font-style: italic; padding: 8px 0;
+  }
+  .member-sort-bar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .member-sort-bar span { font-size: 13px; color: var(--text-secondary); }
+
   @media (max-width: 640px) {
     .badge-grid { grid-template-columns: repeat(2, 1fr); }
     .page-title { font-size: 22px; }
+    .member-badge-grid .badge-card {
+      transform: scale(0.45);
+      margin-right: -86px;
+      margin-bottom: -80px;
+    }
+    .member-badge-grid .badge-card:hover {
+      transform: scale(0.9) translateY(-4px);
+      margin-right: -10px;
+    }
   }
 </style>
 </head>
@@ -65,28 +130,45 @@
 </div>
 
 <div class="container">
-  <div class="page-header">
-    <div class="page-title">我的勋章 <span class="badge-total" id="badge-total">-</span></div>
-    <div class="page-desc">记录我的 AI 能力成就</div>
+  <div class="gallery-tabs">
+    <button class="gallery-tab active" onclick="switchGalleryTab('mine',this)">🏅 我的勋章 <span class="badge-total" id="badge-total">-</span></button>
+    <button class="gallery-tab" onclick="switchGalleryTab('all',this)">👥 全员勋章</button>
   </div>
 
-  <div id="contrib-stats" class="stats-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;animation:fadeSlideUp 0.55s ease"></div>
+  <!-- 我的勋章 -->
+  <div id="panel-mine" class="gallery-panel active">
+    <div id="contrib-stats" class="stats-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;animation:fadeSlideUp 0.55s ease"></div>
 
-  <div class="toolbar">
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="filterBadges('all',this)">全部</button>
-      <button class="filter-btn" onclick="filterBadges('earned',this)">已获得</button>
-      <button class="filter-btn" onclick="filterBadges('locked',this)">未获得</button>
+    <div class="toolbar">
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterBadges('all',this)">全部</button>
+        <button class="filter-btn" onclick="filterBadges('earned',this)">已获得</button>
+        <button class="filter-btn" onclick="filterBadges('locked',this)">未获得</button>
+      </div>
+    </div>
+
+    <div id="badge-wall" class="badge-grid">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
     </div>
   </div>
 
-  <div id="badge-wall" class="badge-grid">
-    <div class="skeleton skeleton-card"></div>
-    <div class="skeleton skeleton-card"></div>
-    <div class="skeleton skeleton-card"></div>
-    <div class="skeleton skeleton-card"></div>
-    <div class="skeleton skeleton-card"></div>
-    <div class="skeleton skeleton-card"></div>
+  <!-- 全员勋章 -->
+  <div id="panel-all" class="gallery-panel">
+    <div class="member-sort-bar">
+      <span>排序方式：</span>
+      <button class="filter-btn active" onclick="sortAllMembers('earned',this)">成就勋章数</button>
+      <button class="filter-btn" onclick="sortAllMembers('total',this)">贡献分</button>
+    </div>
+    <div id="all-members-content">
+      <div class="skeleton" style="height:120px;border-radius:14px;margin-bottom:12px"></div>
+      <div class="skeleton" style="height:120px;border-radius:14px;margin-bottom:12px"></div>
+      <div class="skeleton" style="height:120px;border-radius:14px"></div>
+    </div>
   </div>
 </div>
 
@@ -104,10 +186,13 @@ else {
 let achievementData = { earned: [], locked: [] };
 let userContributions = {};
 let myManualAwards = [], badgeMapData = {};
+let allUsersData = [], allAwardsData = [], allActivities = [], allSkillsData = [], allPartnersData = [], allWebAppsData = [], allWishesData = [];
+let allMembersData = [];
+let currentMemberSort = 'earned';
 
 async function loadBadgeWall() {
   try {
-    const [activities, skills, partners, webApps, wishes, badges, awards] = await Promise.all([
+    const [activities, skills, partners, webApps, wishes, badges, awards, users] = await Promise.all([
       teableGet(TABLE_CALENDAR),
       teableGet(TABLE_SKILLS),
       teableGet(TABLE_PARTNERS),
@@ -115,9 +200,12 @@ async function loadBadgeWall() {
       teableGet(TABLE_WISH),
       teableGet(TABLE_BADGE),
       teableGet(TABLE_AWARD),
+      teableGet(TABLE_USER),
       loadAchievementConfig(),
       loadAchievementImages(),
     ]);
+    allUsersData = users; allAwardsData = awards;
+    allActivities = activities; allSkillsData = skills; allPartnersData = partners; allWebAppsData = webApps; allWishesData = wishes;
 
     // 手动授予的勋章
     badgeMapData = {};
@@ -150,10 +238,19 @@ async function loadBadgeWall() {
     }).join('');
 
     renderWall('all');
+    buildAllMembers();
+    sortAllMembers(currentMemberSort);
   } catch(e) {
     console.error(e);
     document.getElementById('badge-wall').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">⚠️</div><p>加载失败，请刷新重试</p></div>';
   }
+}
+
+function switchGalleryTab(tab, el) {
+  document.querySelectorAll('.gallery-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.gallery-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(tab === 'mine' ? 'panel-mine' : 'panel-all').classList.add('active');
 }
 
 function filterBadges(filter, el) {
@@ -167,14 +264,11 @@ function renderWall(filter) {
   let html = '';
 
   if (filter === 'all' || filter === 'earned') {
-    // 成就勋章
     achievementData.earned.forEach(b => { html += renderAchievementCard(b); });
-    // 手动授予的勋章
     myManualAwards.forEach(a => { html += renderBadgeCard(a, badgeMapData); });
   }
   if (filter === 'all' || filter === 'locked') {
     achievementData.locked.forEach(b => { html += renderLockedAchievementCard(b); });
-    // 未获得的手动勋章
     const earnedNames = new Set(myManualAwards.map(a => a.fields['勋章名称']));
     Object.values(badgeMapData).forEach(b => {
       if (!earnedNames.has(b.fields['名称'])) html += renderLockedBadgeCard(b);
@@ -187,6 +281,86 @@ function renderWall(filter) {
     html = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">${icon}</div><p>${msg}</p></div>`;
   }
   container.innerHTML = html;
+}
+
+// ─── 全员勋章 ───────────────────────────────────────────
+function buildAllMembers() {
+  const activeUsers = allUsersData.filter(u => u.fields['状态'] === '已激活');
+  allMembersData = activeUsers.map(u => {
+    const account = u.fields['账号'];
+    const nickname = u.fields['昵称'];
+    const manualAwards = allAwardsData.filter(a => a.fields['账号'] === account);
+    const manualScore = manualAwards.reduce((sum, a) => {
+      const b = badgeMapData[a.fields['勋章名称']];
+      return sum + (b?.fields['价值分'] || 0);
+    }, 0);
+    const contributions = computeUserContributions(account, nickname, allActivities, allSkillsData, allPartnersData, allWebAppsData, allWishesData);
+    const achievements = generateAchievementBadges(contributions);
+    const totalContrib = contributions.sharer + contributions.skills + contributions.partners + contributions.web + contributions.agent + manualScore;
+    return { account, nickname, manualAwards, achievements, contributions, manualScore, totalContrib, earnedCount: achievements.earned.length, badgeMap: badgeMapData };
+  });
+}
+
+function sortAllMembers(sortBy, el) {
+  currentMemberSort = sortBy;
+  if (el) {
+    document.querySelectorAll('.member-sort-bar .filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+  const sorted = [...allMembersData];
+  if (sortBy === 'earned') sorted.sort((a, b) => b.earnedCount - a.earnedCount);
+  else if (sortBy === 'total') sorted.sort((a, b) => b.totalContrib - a.totalContrib);
+
+  if (sorted.length === 0) {
+    document.getElementById('all-members-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>暂无成员</p></div>';
+    return;
+  }
+  const rankMedals = ['🥇', '🥈', '🥉'];
+  const html = sorted.map((m, i) => {
+    const bm = m.badgeMap;
+    const initial = (m.nickname || m.account).charAt(0).toUpperCase();
+    const medal = i < 3 ? `<span style="font-size:20px;margin-right:4px">${rankMedals[i]}</span>` : `<span style="font-size:11px;color:var(--text-muted);font-weight:600;margin-right:8px">#${i+1}</span>`;
+    const totalBadges = m.achievements.earned.length + m.manualAwards.length;
+
+    const allBadgeCards = [];
+    m.achievements.earned.forEach(ab => {
+      allBadgeCards.push({ sortScore: ab.tier.level * 10, html: renderAchievementCard(ab) });
+    });
+    m.manualAwards.forEach(a => {
+      const b = bm[a.fields['勋章名称']];
+      const score = b?.fields['价值分'] || 0;
+      allBadgeCards.push({ sortScore: score, html: renderBadgeCard(a, bm) });
+    });
+    allBadgeCards.sort((a, b) => b.sortScore - a.sortScore);
+
+    const badgeGridHtml = allBadgeCards.length > 0
+      ? `<div class="member-badge-grid">${allBadgeCards.map(c => c.html).join('')}</div>`
+      : '<div class="member-no-badge">暂无勋章</div>';
+
+    const c = m.contributions;
+    const contribBar = `<div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px;color:var(--text-muted)">
+      <span>📅 ${c.sharer}</span><span>🛠️ ${c.skills}</span><span>🤖 ${c.partners}</span><span>🌐 ${c.web}</span><span>🧠 ${c.agent}</span>
+      ${m.manualScore > 0 ? `<span>🏅 +${m.manualScore}</span>` : ''}
+    </div>`;
+
+    return `<div style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:18px;padding:22px;margin-bottom:14px;overflow:visible">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px;flex-shrink:0">${initial}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px">${medal}${m.nickname||m.account}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${totalBadges} 枚勋章（成就 ${m.achievements.earned.length} + 授予 ${m.manualAwards.length}）</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <span style="font-size:12px;font-weight:700;color:var(--accent-light);background:rgba(127,90,240,0.12);padding:5px 12px;border-radius:16px">${m.earnedCount}/25</span>
+          <span style="font-size:12px;font-weight:700;color:var(--accent2);background:rgba(44,182,125,0.12);padding:5px 12px;border-radius:16px">贡献 ${m.totalContrib}</span>
+        </div>
+      </div>
+      ${contribBar}
+      ${badgeGridHtml}
+    </div>`;
+  }).join('');
+
+  document.getElementById('all-members-content').innerHTML = html;
 }
 </script>
 </div><!-- /main-area -->
