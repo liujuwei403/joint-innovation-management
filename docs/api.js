@@ -143,7 +143,8 @@ function logout() {
   localStorage.removeItem('badge_user');
   localStorage.removeItem('sso_jwt');
   localStorage.setItem('sso_logout', '1');
-  window.location.href = SSO_LOGIN_URL;
+  const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+  window.location.href = SSO_LOGIN_URL + '?redirect=' + encodeURIComponent(base);
 }
 
 function isAdmin() {
