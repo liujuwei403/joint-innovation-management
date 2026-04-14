@@ -34,18 +34,8 @@ if (getCurrentUser()) {
   window.location.href = 'home.html';
 } else {
   (async function() {
-    var params = new URLSearchParams(window.location.search);
-    var ssoToken = params.get('token');
-    var isLogout = localStorage.getItem('sso_logout');
-
-    if (ssoToken && isLogout) {
-      // 退出后 SSO 自动回跳：拦截 token，重新跳 SSO（带 redirect 参数显示完整登录页）
-      localStorage.removeItem('sso_logout');
-      var base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-      window.location.href = SSO_LOGIN_URL + '?redirect=' + encodeURIComponent(base);
-
-    } else if (ssoToken) {
-      // 正常 SSO 回调（用户主动扫码/点头像后）
+    var ssoToken = new URLSearchParams(window.location.search).get('token');
+    if (ssoToken) {
       document.getElementById('loading-msg').textContent = '正在验证身份...';
       history.replaceState({}, '', window.location.pathname);
       try { await handleSSOCallback(ssoToken); }
@@ -53,9 +43,7 @@ if (getCurrentUser()) {
         document.getElementById('loading-msg').textContent = '登录失败: ' + e.message;
         setTimeout(function(){ window.location.href = SSO_LOGIN_URL; }, 2000);
       }
-
     } else {
-      // 首次访问，跳 SSO
       window.location.href = SSO_LOGIN_URL;
     }
   })();

@@ -142,9 +142,8 @@ function requireLogin() {
 function logout() {
   localStorage.removeItem('badge_user');
   localStorage.removeItem('sso_jwt');
-  localStorage.setItem('sso_logout', '1');
-  const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-  window.location.href = SSO_LOGIN_URL + '?redirect=' + encodeURIComponent(base);
+  localStorage.removeItem('sso_logout');
+  window.location.href = 'https://sso.100tal.com/sso/logout?path=' + encodeURIComponent(SSO_LOGIN_URL);
 }
 
 function isAdmin() {
