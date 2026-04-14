@@ -15,8 +15,8 @@ const TABLE_WISH     = 'tbl35B5sj6WqDOnDqKy';  // 许愿池表
 const TABLE_TRACKING = 'tbll6dJLBRLkrpOWt9b';  // 操作追踪表
 
 // ─── SSO 配置 ─────────────────────────────────────────────────────
-const SSO_APP_ID   = 'YOUR_APP_ID';  // TODO: 替换为实际 appid
-const SSO_FC_BASE  = 'YOUR_FC_URL';  // TODO: 替换为阿里云FC触发器URL
+const SSO_APP_ID   = '1475405957';
+const SSO_FC_BASE  = 'https://liujuwei-sso-mmyoppocwk.cn-hangzhou.fcapp.run';
 const SSO_LOGIN_URL = `https://sso.100tal.com/portal/login/${SSO_APP_ID}`;
 
 const HEADERS = {
