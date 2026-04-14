@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="style.css">
 <style>
   html, body { height: 100%; margin: 0; overflow: hidden; }
-  #sso-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: none; z-index: 999; display: none; }
   .loading-wrap {
     display: flex; align-items: center; justify-content: center;
     height: 100%; flex-direction: column; gap: 12px;
@@ -24,70 +23,33 @@
 </head>
 <body>
 <div class="aurora-bg"></div>
-
 <div class="loading-wrap" id="loading">
   <div class="spinner"></div>
   <p id="loading-msg">正在跳转登录...</p>
 </div>
 
-<iframe id="sso-frame"></iframe>
-
 <script src="api.js"></script>
 <script>
-// 如果在 iframe 内且有 token，通知父页面并退出
-if (window.self !== window.top) {
-  const token = new URLSearchParams(window.location.search).get('token');
-  if (token) {
-    window.parent.postMessage({ type: 'sso_token', token: token }, '*');
-  }
+if (getCurrentUser()) {
+  window.location.href = 'home.html';
 } else {
-  // 主页面逻辑
-  if (getCurrentUser()) {
-    window.location.href = 'home.html';
-  } else {
+  (async function() {
     const params = new URLSearchParams(window.location.search);
     const ssoToken = params.get('token');
-    const isLogout = localStorage.getItem('sso_logout');
 
-    if (isLogout) {
-      // 退出后：用 iframe 展示 SSO 登录页
-      localStorage.removeItem('sso_logout');
-      history.replaceState({}, '', window.location.pathname);
-      document.getElementById('loading').style.display = 'none';
-      const frame = document.getElementById('sso-frame');
-      frame.src = SSO_LOGIN_URL;
-      frame.style.display = 'block';
-
-      // 监听 iframe 内 SSO 回调
-      window.addEventListener('message', async function(e) {
-        if (e.data && e.data.type === 'sso_token') {
-          frame.style.display = 'none';
-          document.getElementById('loading').style.display = 'flex';
-          document.getElementById('loading-msg').textContent = '正在验证身份...';
-          try {
-            await handleSSOCallback(e.data.token);
-          } catch(err) {
-            document.getElementById('loading-msg').textContent = '登录失败: ' + err.message;
-          }
-        }
-      });
-    } else if (ssoToken) {
-      // 正常 SSO 回调
+    if (ssoToken) {
       document.getElementById('loading-msg').textContent = '正在验证身份...';
       history.replaceState({}, '', window.location.pathname);
-      (async function() {
-        try {
-          await handleSSOCallback(ssoToken);
-        } catch(e) {
-          document.getElementById('loading-msg').textContent = '登录失败: ' + e.message;
-          setTimeout(() => { window.location.href = SSO_LOGIN_URL; }, 2000);
-        }
-      })();
+      try {
+        await handleSSOCallback(ssoToken);
+      } catch(e) {
+        document.getElementById('loading-msg').textContent = '登录失败: ' + e.message;
+        setTimeout(() => { window.location.href = SSO_LOGIN_URL; }, 2000);
+      }
     } else {
-      // 首次访问，直接跳 SSO
       window.location.href = SSO_LOGIN_URL;
     }
-  }
+  })();
 }
 </script>
 </body>
