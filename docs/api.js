@@ -142,7 +142,7 @@ function requireLogin() {
 function logout() {
   localStorage.removeItem('badge_user');
   localStorage.removeItem('sso_jwt');
-  window.location.href = SSO_LOGIN_URL;
+  window.location.href = 'index.html?logout=1';
 }
 
 function isAdmin() {

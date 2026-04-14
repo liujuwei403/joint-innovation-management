@@ -85,6 +85,11 @@
       <div class="spinner"></div>
       <p id="sso-msg">正在跳转SSO登录...</p>
     </div>
+
+    <div id="logout-panel" style="display:none;text-align:center">
+      <p style="color:var(--text-secondary);margin-bottom:16px">已退出登录</p>
+      <button class="btn btn-primary" style="width:100%" onclick="window.location.href=SSO_LOGIN_URL">重新登录</button>
+    </div>
   </div>
 </div>
 
@@ -95,6 +100,7 @@ else {
   (async function() {
     const params = new URLSearchParams(window.location.search);
     const ssoToken = params.get('token');
+    const isLogout = params.get('logout');
 
     if (ssoToken) {
       document.getElementById('sso-msg').textContent = '正在验证身份...';
@@ -106,6 +112,9 @@ else {
         document.querySelector('.spinner').style.display = 'none';
         setTimeout(() => { window.location.href = SSO_LOGIN_URL; }, 2000);
       }
+    } else if (isLogout) {
+      document.getElementById('sso-status').style.display = 'none';
+      document.getElementById('logout-panel').style.display = 'block';
     } else {
       window.location.href = SSO_LOGIN_URL;
     }
