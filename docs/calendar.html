@@ -164,7 +164,6 @@
 <div class="topbar">
   <div class="topbar-right">
     <span class="topbar-user" id="nav-user"></span>
-    <button class="topbar-btn" onclick="openPwdModal()">改密</button>
     <button class="topbar-btn" onclick="logout()">退出</button>
   </div>
 </div>
@@ -247,7 +246,6 @@ const user = getCurrentUser();
 if (!user) window.location.href = 'index.html';
 else {
   document.getElementById('nav-user').textContent = user.nickname;
-  if (user.role === '游客') document.querySelector('.topbar-btn[onclick*="openPwdModal"]').style.display = 'none';
   if (user.role === '管理员') {
     document.getElementById('admin-tab').style.display = 'flex';
     document.getElementById('btn-add-event').style.display = '';
