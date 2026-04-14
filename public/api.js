@@ -14,6 +14,11 @@ const TABLE_ACH_IMG  = 'tblavDgXC3oGmQ687pK';  // 成就勋章图片表
 const TABLE_WISH     = 'tbl35B5sj6WqDOnDqKy';  // 许愿池表
 const TABLE_TRACKING = 'tbll6dJLBRLkrpOWt9b';  // 操作追踪表
 
+// ─── SSO 配置 ─────────────────────────────────────────────────────
+const SSO_APP_ID   = 'YOUR_APP_ID';  // TODO: 替换为实际 appid
+const SSO_FC_BASE  = 'YOUR_FC_URL';  // TODO: 替换为阿里云FC触发器URL
+const SSO_LOGIN_URL = `https://sso.100tal.com/portal/login/${SSO_APP_ID}`;
+
 const HEADERS = {
   Authorization: `Bearer ${TEABLE_TOKEN}`,
   'Content-Type': 'application/json',
@@ -115,7 +120,15 @@ async function findUser(account) {
 
 function getCurrentUser() {
   const s = localStorage.getItem('badge_user');
-  return s ? JSON.parse(s) : null;
+  if (!s) return null;
+  const user = JSON.parse(s);
+  if (user.role === '游客') return user;
+  const sso = getSavedSSO();
+  if (!sso) {
+    localStorage.removeItem('badge_user');
+    return null;
+  }
+  return user;
 }
 
 function requireLogin() {
@@ -128,6 +141,7 @@ function requireLogin() {
 
 function logout() {
   localStorage.removeItem('badge_user');
+  localStorage.removeItem('sso_jwt');
   window.location.href = 'index.html';
 }
 
@@ -136,69 +150,75 @@ function isAdmin() {
   return u && u.role === '管理员';
 }
 
-// ─── 修改密码 ─────────────────────────────────────────────────
-function initPasswordModal() {
-  if (document.getElementById('pwd-modal')) return;
-  const div = document.createElement('div');
-  div.innerHTML = `
-  <div class="modal-overlay" id="pwd-modal">
-    <div class="modal" style="width:380px">
-      <h3>修改密码</h3>
-      <div class="field"><label>当前密码</label><input id="pwd-old" type="password" style="padding-left:14px" placeholder="输入当前密码"></div>
-      <div class="field"><label>新密码</label><input id="pwd-new" type="password" style="padding-left:14px" placeholder="至少6位"></div>
-      <div class="field"><label>确认新密码</label><input id="pwd-confirm" type="password" style="padding-left:14px" placeholder="再次输入新密码"></div>
-      <div id="pwd-msg" style="font-size:13px;margin-top:8px;display:none"></div>
-      <div class="modal-actions">
-        <button class="btn-sm btn-cancel" onclick="closePwdModal()">取消</button>
-        <button class="btn-sm btn-accent" onclick="doChangePwd()">确认修改</button>
-      </div>
-    </div>
-  </div>`;
-  document.body.appendChild(div.firstElementChild);
+// ─── SSO 认证 ─────────────────────────────────────────────────
+function decodeJWT(token) {
+  const payload = token.split('.')[1];
+  const bin = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function getSavedSSO() {
+  const jwt = localStorage.getItem('sso_jwt');
+  if (!jwt) return null;
+  try {
+    const payload = decodeJWT(jwt);
+    if (payload.exp * 1000 < Date.now()) {
+      localStorage.removeItem('sso_jwt');
+      return null;
+    }
+    return { token: jwt, payload };
+  } catch {
+    localStorage.removeItem('sso_jwt');
+    return null;
+  }
+}
+
+async function handleSSOCallback(ssoToken) {
+  const res = await fetch(`${SSO_FC_BASE}/auth/callback?token=${encodeURIComponent(ssoToken)}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'SSO验证失败');
+  }
+  const data = await res.json();
+  localStorage.setItem('sso_jwt', data.token);
+
+  const payload = decodeJWT(data.token);
+  const emailPrefix = (payload.email || '').split('@')[0];
+  const record = await findUser(emailPrefix);
+
+  if (record) {
+    const f = record.fields;
+    if (f['状态'] === '已禁用') throw new Error('账号已被禁用');
+    teableUpdate(TABLE_USER, record.id, {
+      '最后登录': new Date().toISOString(),
+      '邮箱': payload.email || '',
+      '工号': payload.workcode || '',
+    });
+    if (f['状态'] !== '已激活') {
+      await teableUpdate(TABLE_USER, record.id, { '状态': '已激活' });
+    }
+    localStorage.setItem('badge_user', JSON.stringify({
+      id: record.id,
+      account: f['账号'],
+      nickname: f['昵称'],
+      role: f['角色'] || '普通用户',
+    }));
+  } else {
+    localStorage.setItem('badge_user', JSON.stringify({
+      id: 'sso_guest',
+      account: emailPrefix || payload.workcode || 'sso_user',
+      nickname: payload.name || '访客',
+      role: '游客',
+    }));
+  }
+
+  window.location.href = 'home.html';
 }
 
 function openPwdModal() {
-  initPasswordModal();
-  document.getElementById('pwd-old').value = '';
-  document.getElementById('pwd-new').value = '';
-  document.getElementById('pwd-confirm').value = '';
-  document.getElementById('pwd-msg').style.display = 'none';
-  document.getElementById('pwd-modal').classList.add('show');
-}
-
-function closePwdModal() {
-  document.getElementById('pwd-modal').classList.remove('show');
-}
-
-function showPwdMsg(text, isError) {
-  const el = document.getElementById('pwd-msg');
-  el.textContent = text;
-  el.style.display = 'block';
-  el.style.color = isError ? 'var(--danger, #ff6b6b)' : 'var(--success, #2cb67d)';
-}
-
-async function doChangePwd() {
-  const oldPwd = document.getElementById('pwd-old').value;
-  const newPwd = document.getElementById('pwd-new').value;
-  const confirmPwd = document.getElementById('pwd-confirm').value;
-  const user = getCurrentUser();
-  if (!user) return;
-
-  if (!oldPwd || !newPwd) return showPwdMsg('请填写完整', true);
-  if (newPwd.length < 6) return showPwdMsg('新密码至少6位', true);
-  if (newPwd !== confirmPwd) return showPwdMsg('两次密码不一致', true);
-
-  try {
-    const record = await findUser(user.account);
-    if (!record) return showPwdMsg('用户不存在', true);
-    if (record.fields['密码哈希'] !== oldPwd) return showPwdMsg('当前密码错误', true);
-
-    await teableUpdate(TABLE_USER, record.id, { '密码哈希': newPwd });
-    showPwdMsg('密码修改成功！', false);
-    setTimeout(closePwdModal, 1500);
-  } catch(e) {
-    showPwdMsg('修改失败: ' + e.message, true);
-  }
+  alert('密码请通过公司SSO系统修改');
 }
 
 // ─── 成就勋章系统 ─────────────────────────────────────────────
