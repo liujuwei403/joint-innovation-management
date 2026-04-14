@@ -4,124 +4,90 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>登录 · AI共创</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  html, body { height: 100%; overflow: hidden; }
-  body { display: flex; align-items: center; justify-content: center; }
-  .card-wrap { position: relative; z-index: 10; width: 420px; }
-  .card {
-    background: rgba(26,25,50,0.85);
-    backdrop-filter: blur(32px) saturate(150%);
-    -webkit-backdrop-filter: blur(32px) saturate(150%);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-xl);
-    padding: 44px 40px 36px;
-    box-shadow: 0 8px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-  .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
-  .logo-icon {
-    width: 42px; height: 42px;
-    background: #2a2d4a;
-    border-radius: 12px;
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  #sso-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: none; z-index: 999; display: none; }
+  .loading-wrap {
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    height: 100%; flex-direction: column; gap: 12px;
   }
-  .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #fffffe; }
-
-  .sso-status {
-    display: none; text-align: center; padding: 24px 0;
-  }
-  .sso-status .spinner {
-    display: inline-block; width: 28px; height: 28px;
+  .spinner {
+    width: 28px; height: 28px;
     border: 3px solid rgba(127,90,240,0.2);
-    border-top-color: var(--accent);
+    border-top-color: #7f5af0;
     border-radius: 50%; animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .sso-status p { margin-top: 12px; color: var(--text-secondary); font-size: 14px; }
-
-  .card-footer {
-    margin-top: 24px; padding-top: 18px;
-    border-top: 1px solid var(--border);
-    text-align: center; font-size: 12px; color: var(--text-muted);
-  }
-
-  .btn-guest {
-    background: transparent; border: 1px solid var(--glass-border);
-    color: var(--text-muted); font-family: inherit; font-size: 14px;
-    font-weight: 600; padding: 12px; border-radius: var(--radius-md);
-    cursor: pointer; transition: all 0.25s;
-  }
-  .btn-guest:hover { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
-
-  /* Floating particles */
-  .particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
-  .particle {
-    position: absolute; border-radius: 50%;
-    background: var(--accent); opacity: 0.1;
-    animation: float linear infinite;
-  }
-  @keyframes float {
-    0% { transform: translateY(100vh) scale(0); opacity: 0; }
-    10% { opacity: 0.15; }
-    90% { opacity: 0.15; }
-    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-  }
+  .loading-wrap p { color: #94a1b2; font-size: 14px; }
 </style>
 </head>
 <body>
 <div class="aurora-bg"></div>
-<div class="particles" id="particles"></div>
 
-<div class="card-wrap">
-  <div class="card">
-    <div class="logo">
-      <div class="logo-icon" style="background:linear-gradient(135deg,#1a1a3e,#2a2d5a);color:#d4a843;font-size:15px;font-weight:800;letter-spacing:1px">AI</div>
-      <div class="logo-text">集团仓储管理部AI共创</div>
-    </div>
-
-    <div id="sso-status" class="sso-status" style="display:block">
-      <div class="spinner"></div>
-      <p id="sso-msg">正在跳转SSO登录...</p>
-    </div>
-
-    <div id="relogin-panel" style="display:none;text-align:center">
-      <p style="color:var(--text-secondary);margin-bottom:16px">已退出登录</p>
-      <button class="btn btn-primary" style="width:100%" onclick="localStorage.removeItem('sso_logout');window.location.href=SSO_LOGIN_URL">重新登录</button>
-    </div>
-
-  </div>
+<div class="loading-wrap" id="loading">
+  <div class="spinner"></div>
+  <p id="loading-msg">正在跳转登录...</p>
 </div>
+
+<iframe id="sso-frame"></iframe>
 
 <script src="api.js"></script>
 <script>
-if (getCurrentUser()) { window.location.href = 'home.html'; }
-else {
-  (async function() {
+// 如果在 iframe 内且有 token，通知父页面并退出
+if (window.self !== window.top) {
+  const token = new URLSearchParams(window.location.search).get('token');
+  if (token) {
+    window.parent.postMessage({ type: 'sso_token', token: token }, '*');
+  }
+} else {
+  // 主页面逻辑
+  if (getCurrentUser()) {
+    window.location.href = 'home.html';
+  } else {
     const params = new URLSearchParams(window.location.search);
     const ssoToken = params.get('token');
     const isLogout = localStorage.getItem('sso_logout');
 
     if (isLogout) {
-      // 退出后 SSO 自动回跳，拦截 token，不自动登录
+      // 退出后：用 iframe 展示 SSO 登录页
+      localStorage.removeItem('sso_logout');
       history.replaceState({}, '', window.location.pathname);
-      document.getElementById('sso-status').style.display = 'none';
-      document.getElementById('relogin-panel').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      const frame = document.getElementById('sso-frame');
+      frame.src = SSO_LOGIN_URL;
+      frame.style.display = 'block';
+
+      // 监听 iframe 内 SSO 回调
+      window.addEventListener('message', async function(e) {
+        if (e.data && e.data.type === 'sso_token') {
+          frame.style.display = 'none';
+          document.getElementById('loading').style.display = 'flex';
+          document.getElementById('loading-msg').textContent = '正在验证身份...';
+          try {
+            await handleSSOCallback(e.data.token);
+          } catch(err) {
+            document.getElementById('loading-msg').textContent = '登录失败: ' + err.message;
+          }
+        }
+      });
     } else if (ssoToken) {
-      document.getElementById('sso-msg').textContent = '正在验证身份...';
+      // 正常 SSO 回调
+      document.getElementById('loading-msg').textContent = '正在验证身份...';
       history.replaceState({}, '', window.location.pathname);
-      try {
-        await handleSSOCallback(ssoToken);
-      } catch(e) {
-        document.getElementById('sso-msg').textContent = '登录失败: ' + e.message;
-        document.querySelector('.spinner').style.display = 'none';
-        setTimeout(() => { window.location.href = SSO_LOGIN_URL; }, 2000);
-      }
+      (async function() {
+        try {
+          await handleSSOCallback(ssoToken);
+        } catch(e) {
+          document.getElementById('loading-msg').textContent = '登录失败: ' + e.message;
+          setTimeout(() => { window.location.href = SSO_LOGIN_URL; }, 2000);
+        }
+      })();
     } else {
+      // 首次访问，直接跳 SSO
       window.location.href = SSO_LOGIN_URL;
     }
-  })();
+  }
 }
 </script>
 </body>
