@@ -97,7 +97,12 @@ else {
     const params = new URLSearchParams(window.location.search);
     const ssoToken = params.get('token');
 
-    if (ssoToken) {
+    if (ssoToken && sessionStorage.getItem('sso_logout')) {
+      sessionStorage.removeItem('sso_logout');
+      history.replaceState({}, '', window.location.pathname);
+      document.getElementById('sso-msg').textContent = '已退出，正在跳转登录页...';
+      setTimeout(() => { window.location.href = SSO_LOGIN_URL; }, 500);
+    } else if (ssoToken) {
       document.getElementById('sso-msg').textContent = '正在验证身份...';
       history.replaceState({}, '', window.location.pathname);
       try {

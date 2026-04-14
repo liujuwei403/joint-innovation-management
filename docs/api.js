@@ -142,6 +142,7 @@ function requireLogin() {
 function logout() {
   localStorage.removeItem('badge_user');
   localStorage.removeItem('sso_jwt');
+  sessionStorage.setItem('sso_logout', '1');
   window.location.href = SSO_LOGIN_URL;
 }
 
