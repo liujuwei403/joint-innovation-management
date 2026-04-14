@@ -81,77 +81,36 @@
       <div class="logo-text">集团仓储管理部AI共创</div>
     </div>
 
-    <div id="sso-status" class="sso-status">
+    <div id="sso-status" class="sso-status" style="display:block">
       <div class="spinner"></div>
-      <p>正在验证身份...</p>
+      <p id="sso-msg">正在跳转SSO登录...</p>
     </div>
-
-    <div id="sso-buttons">
-      <button class="btn btn-primary" style="width:100%" onclick="ssoLogin()">
-        <span class="btn-text">公司账号登录</span>
-      </button>
-      <button class="btn btn-guest" style="width:100%;margin-top:10px" onclick="guestEnter()">
-        <span class="btn-text">游客进入</span>
-      </button>
-      <div class="msg" id="msg-login"></div>
-    </div>
-
-    <div class="card-footer">使用公司SSO统一登录</div>
   </div>
 </div>
 
 <script src="api.js"></script>
 <script>
-// Particles
-(function() {
-  const c = document.getElementById('particles');
-  for (let i = 0; i < 20; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    const s = Math.random() * 4 + 2;
-    p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*15+10}s;animation-delay:${Math.random()*10}s;`;
-    if (Math.random() > 0.5) p.style.background = 'var(--accent2)';
-    c.appendChild(p);
-  }
-})();
+if (getCurrentUser()) { window.location.href = 'home.html'; }
+else {
+  (async function() {
+    const params = new URLSearchParams(window.location.search);
+    const ssoToken = params.get('token');
 
-if (getCurrentUser()) window.location.href = 'home.html';
-
-function showMsg(id, text, type) {
-  const el = document.getElementById(id);
-  el.textContent = text;
-  el.className = 'msg ' + type + ' show';
+    if (ssoToken) {
+      document.getElementById('sso-msg').textContent = '正在验证身份...';
+      history.replaceState({}, '', window.location.pathname);
+      try {
+        await handleSSOCallback(ssoToken);
+      } catch(e) {
+        document.getElementById('sso-msg').textContent = '登录失败: ' + e.message;
+        document.querySelector('.spinner').style.display = 'none';
+        setTimeout(() => { window.location.href = SSO_LOGIN_URL; }, 2000);
+      }
+    } else {
+      window.location.href = SSO_LOGIN_URL;
+    }
+  })();
 }
-
-function ssoLogin() {
-  window.location.href = SSO_LOGIN_URL;
-}
-
-function guestEnter() {
-  localStorage.setItem('badge_user', JSON.stringify({
-    id: 'guest', account: 'guest', nickname: '游客', role: '游客'
-  }));
-  window.location.href = 'home.html';
-}
-
-// SSO 回调处理
-(async function() {
-  const params = new URLSearchParams(window.location.search);
-  const ssoToken = params.get('token');
-  if (!ssoToken) return;
-
-  document.getElementById('sso-buttons').style.display = 'none';
-  document.getElementById('sso-status').style.display = 'block';
-  history.replaceState({}, '', window.location.pathname);
-
-  try {
-    await handleSSOCallback(ssoToken);
-  } catch(e) {
-    document.getElementById('sso-status').style.display = 'none';
-    document.getElementById('sso-buttons').style.display = 'block';
-    showMsg('msg-login', '登录失败: ' + e.message, 'error');
-  }
-})();
 </script>
 </body>
 </html>
