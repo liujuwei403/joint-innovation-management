@@ -305,7 +305,7 @@ function sortAllMembers(sortBy, el) {
     el.classList.add('active');
   }
   const sorted = [...allMembersData];
-  if (sortBy === 'earned') sorted.sort((a, b) => b.earnedCount - a.earnedCount);
+  if (sortBy === 'earned') sorted.sort((a, b) => (b.earnedCount + b.manualAwards.length) - (a.earnedCount + a.manualAwards.length));
   else if (sortBy === 'total') sorted.sort((a, b) => b.totalContrib - a.totalContrib);
 
   if (sorted.length === 0) {
