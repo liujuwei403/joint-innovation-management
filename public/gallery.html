@@ -71,7 +71,7 @@
     transform: scale(1.02) translateY(-8px);
     z-index: 100;
     box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 60px var(--badge-glow, var(--accent-glow));
-    margin-right: 8px;
+    overflow: visible;
   }
   .member-badge-grid .badge-card .badge-name {
     font-size: 13px;
@@ -100,7 +100,6 @@
     }
     .member-badge-grid .badge-card:hover {
       transform: scale(0.9) translateY(-4px);
-      margin-right: -10px;
     }
   }
 </style>
@@ -136,7 +135,7 @@
 
   <!-- 我的勋章 -->
   <div id="panel-mine" class="gallery-panel active">
-    <div id="contrib-stats" class="stats-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;animation:fadeSlideUp 0.55s ease"></div>
+    <div id="contrib-stats" class="stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:20px;animation:fadeSlideUp 0.55s ease"></div>
 
     <div class="toolbar">
       <div class="filter-bar">
@@ -294,7 +293,7 @@ function buildAllMembers() {
     }, 0);
     const contributions = computeUserContributions(account, nickname, allActivities, allSkillsData, allPartnersData, allWebAppsData, allWishesData);
     const achievements = generateAchievementBadges(contributions);
-    const totalContrib = contributions.sharer + contributions.skills + contributions.partners + contributions.web + contributions.agent + manualScore;
+    const totalContrib = contributions.sharer + contributions.skills + contributions.partners + contributions.web + contributions.agent + (contributions.wish || 0) + manualScore;
     return { account, nickname, manualAwards, achievements, contributions, manualScore, totalContrib, earnedCount: achievements.earned.length, badgeMap: badgeMapData };
   });
 }
@@ -337,7 +336,7 @@ function sortAllMembers(sortBy, el) {
 
     const c = m.contributions;
     const contribBar = `<div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px;color:var(--text-muted)">
-      <span>📅 ${c.sharer}</span><span>🛠️ ${c.skills}</span><span>🤖 ${c.partners}</span><span>🌐 ${c.web}</span><span>🧠 ${c.agent}</span>
+      <span>📅 ${c.sharer}</span><span>🛠️ ${c.skills}</span><span>🤖 ${c.partners}</span><span>🌐 ${c.web}</span><span>🧠 ${c.agent}</span><span>🌟 ${c.wish || 0}</span>
       ${m.manualScore > 0 ? `<span>🏅 +${m.manualScore}</span>` : ''}
     </div>`;
 
@@ -349,7 +348,7 @@ function sortAllMembers(sortBy, el) {
           <div style="font-size:12px;color:var(--text-muted)">${totalBadges} 枚勋章（成就 ${m.achievements.earned.length} + 授予 ${m.manualAwards.length}）</div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0">
-          <span style="font-size:12px;font-weight:700;color:var(--accent-light);background:rgba(127,90,240,0.12);padding:5px 12px;border-radius:16px">${m.earnedCount}/25</span>
+          <span style="font-size:12px;font-weight:700;color:var(--accent-light);background:rgba(127,90,240,0.12);padding:5px 12px;border-radius:16px">${totalBadges}/${ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length + Object.keys(badgeMapData).length}</span>
           <span style="font-size:12px;font-weight:700;color:var(--accent2);background:rgba(44,182,125,0.12);padding:5px 12px;border-radius:16px">贡献 ${m.totalContrib}</span>
         </div>
       </div>
