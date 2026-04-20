@@ -205,13 +205,18 @@ function switchModule(mod, el) {
 
 async function loadAll() {
   try {
-    [activities, skills, partners, webApps, allWishesData] = await Promise.all([
+    const results = await Promise.allSettled([
       teableGet(TABLE_CALENDAR, true),
       teableGet(TABLE_SKILLS, true),
       teableGet(TABLE_PARTNERS, true),
       teableGet(TABLE_WEB, true),
       teableGet(TABLE_WISH, true),
     ]);
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') console.error('loadAll 子请求失败 idx=' + i, r.reason);
+    });
+    [activities, skills, partners, webApps, allWishesData] =
+      results.map(r => r.status === 'fulfilled' ? r.value : []);
     activities.sort((a, b) => (b.fields['开始时间']||'').localeCompare(a.fields['开始时间']||''));
     partners.sort((a, b) => (b.fields['使用量']||0) - (a.fields['使用量']||0));
 
@@ -333,7 +338,7 @@ function renderPartners() {
 // ─── Web Stats ──────────────────────────────────────────────
 function renderWebStats() {
   const devs = {};
-  webApps.forEach(w => { const d = w.fields['开发者']||''; devs[d] = (devs[d]||0)+1; });
+  webApps.forEach(w => { const d = w.fields['创作者']||''; devs[d] = (devs[d]||0)+1; });
   const topDev = Object.entries(devs).sort((a,b) => b[1]-a[1])[0];
   document.getElementById('stats-web').innerHTML = `
     <div class="mini-stat"><div class="mini-stat-num">${webApps.length}</div><div class="mini-stat-label">网页应用数</div></div>

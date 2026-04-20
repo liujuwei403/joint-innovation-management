@@ -7,7 +7,7 @@ const TABLE_AWARD   = 'tblAFkIIbOXzOd6A9aL';
 const TABLE_CALENDAR = 'tblXG0tJWYIHWZV3fuK';
 const TABLE_SKILLS   = 'tblipOYB5NubdTLyJUI';
 const TABLE_PARTNERS = 'tbl6F420n83fHqdax2A';
-const TABLE_WEB      = 'tblKp0hatJz94yLnNGR';
+const TABLE_WEB      = 'tblkUdOK7XDe1zNlPE6';
 const TABLE_ACH_CAT  = 'tblbQvz1AwKkRZoaXBj';  // 成就类别表
 const TABLE_ACH_TIER = 'tbl05q2jCD5Q9ErYcK5';  // 成就等级表
 const TABLE_ACH_IMG  = 'tblavDgXC3oGmQ687pK';  // 成就勋章图片表
@@ -308,7 +308,7 @@ function computeUserContributions(account, nickname, activities, skills, partner
   const partnerCount = partners.filter(p => (p.fields['开发者'] || '') === nickname).length;
 
   // 网页成果：开发者字段是昵称
-  const webCount = (webApps || []).filter(w => (w.fields['开发者'] || '') === nickname).length;
+  const webCount = (webApps || []).filter(w => (w.fields['创作者'] || '') === nickname).length;
 
   // 愿望实现：作为领取者完成的愿望数
   const wishCount = (wishes || []).filter(w => w.fields['领取者'] === account && w.fields['状态'] === '已完成').length;
