@@ -1115,3 +1115,65 @@ nav { display: none; }
 @media (max-width: 480px) {
   .topbar-user { display: none; }
 }
+
+/* ─── 全员勋章 member cards（gallery + admin 共用） ─── */
+.member-badge-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 12px 56px;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+.member-badge-grid::-webkit-scrollbar { height: 6px; }
+.member-badge-grid::-webkit-scrollbar-track { background: transparent; }
+.member-badge-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 3px; }
+.member-badge-grid::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+.member-badge-grid .badge-card {
+  flex: 0 0 auto;
+  transform: scale(0.52);
+  transform-origin: center center;
+  width: 160px;
+  margin: 0 -38px;
+  transition: transform 0.22s cubic-bezier(0.25,0.46,0.45,0.94),
+              box-shadow 0.22s ease;
+  z-index: 1;
+  cursor: pointer;
+  will-change: transform;
+}
+.member-badge-grid .badge-card:hover {
+  transform: scale(1.08);
+  z-index: 100;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 60px var(--badge-glow, var(--accent-glow));
+}
+.member-badge-grid .badge-card:hover ~ .badge-card {
+  transform: scale(0.52) translateX(64px);
+}
+.member-badge-grid .badge-card:has(~ .badge-card:hover) {
+  transform: scale(0.52) translateX(-64px);
+}
+.member-badge-grid .badge-card .badge-name {
+  font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.member-badge-grid .badge-card .badge-cat,
+.member-badge-grid .badge-card .badge-date {
+  font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.member-no-badge {
+  color: var(--text-muted); font-size: 12px; font-style: italic; padding: 8px 0;
+}
+.member-sort-bar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.member-sort-bar span { font-size: 13px; color: var(--text-secondary); }
+
+@media (max-width: 640px) {
+  .member-badge-grid { padding: 10px 48px; }
+  .member-badge-grid .badge-card { transform: scale(0.45); margin: 0 -44px; }
+  .member-badge-grid .badge-card:hover { transform: scale(0.95); }
+  .member-badge-grid .badge-card:hover ~ .badge-card { transform: scale(0.45) translateX(56px); }
+  .member-badge-grid .badge-card:has(~ .badge-card:hover) { transform: scale(0.45) translateX(-56px); }
+}

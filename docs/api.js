@@ -552,3 +552,86 @@ document.addEventListener('click', function(e) {
   if (!action) action = 'click:' + (el.textContent || '').trim().substring(0, 20);
   if (action && action !== 'click:') trackClick(action, page);
 }, true);
+
+// ─── 全员勋章共享渲染（gallery + admin 复用） ───────────────
+function renderAllMembersInto(containerId, members, sortBy) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const sorted = [...members];
+  if (sortBy === 'earned') {
+    sorted.sort((a, b) => (b.earnedCount + b.manualAwards.length) - (a.earnedCount + a.manualAwards.length));
+  } else if (sortBy === 'total') {
+    sorted.sort((a, b) => b.totalContrib - a.totalContrib);
+  }
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>暂无成员</p></div>';
+    return;
+  }
+
+  const rankMedals = ['🥇', '🥈', '🥉'];
+  const customBadgeCount = Object.keys(sorted[0].badgeMap || {}).length;
+  const universe = ACHIEVEMENT_BADGES.length * ACHIEVEMENT_TIERS.length + customBadgeCount;
+
+  container.innerHTML = sorted.map((m, i) => {
+    const bm = m.badgeMap;
+    const initial = (m.nickname || m.account).charAt(0).toUpperCase();
+    const medal = i < 3
+      ? `<span style="font-size:20px;margin-right:4px">${rankMedals[i]}</span>`
+      : `<span style="font-size:11px;color:var(--text-muted);font-weight:600;margin-right:8px">#${i+1}</span>`;
+    const totalBadges = m.achievements.earned.length + m.manualAwards.length;
+
+    const allBadgeCards = [];
+    m.achievements.earned.forEach(ab => {
+      allBadgeCards.push({ sortScore: ab.tier.level * 10, html: renderAchievementCard(ab) });
+    });
+    m.manualAwards.forEach(a => {
+      const b = bm[a.fields['勋章名称']];
+      const score = b?.fields['价值分'] || 0;
+      allBadgeCards.push({ sortScore: score, html: renderBadgeCard(a, bm) });
+    });
+    allBadgeCards.sort((a, b) => b.sortScore - a.sortScore);
+
+    const badgeGridHtml = allBadgeCards.length > 0
+      ? `<div class="member-badge-grid">${allBadgeCards.map(c => c.html).join('')}</div>`
+      : '<div class="member-no-badge">暂无勋章</div>';
+
+    const c = m.contributions;
+    const contribBar = `<div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px;color:var(--text-muted)">
+      <span>📅 ${c.sharer}</span><span>🛠️ ${c.skills}</span><span>🤖 ${c.partners}</span><span>🌐 ${c.web}</span><span>🧠 ${c.agent}</span><span>🌟 ${c.wish || 0}</span>
+      ${m.manualScore > 0 ? `<span>🏅 +${m.manualScore}</span>` : ''}
+    </div>`;
+
+    return `<div style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:18px;padding:22px;margin-bottom:14px;overflow:visible">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px;flex-shrink:0">${initial}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px">${medal}${m.nickname||m.account}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${totalBadges} 枚勋章（成就 ${m.achievements.earned.length} + 授予 ${m.manualAwards.length}）</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <span style="font-size:12px;font-weight:700;color:var(--accent-light);background:rgba(127,90,240,0.12);padding:5px 12px;border-radius:16px">${totalBadges}/${universe}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--accent2);background:rgba(44,182,125,0.12);padding:5px 12px;border-radius:16px">贡献 ${m.totalContrib}</span>
+        </div>
+      </div>
+      ${contribBar}
+      ${badgeGridHtml}
+    </div>`;
+  }).join('');
+}
+
+function bindMemberGridScroll(hostId) {
+  const host = document.getElementById(hostId);
+  if (!host || host._memberScrollBound) return;
+  host._memberScrollBound = true;
+  host.addEventListener('mousemove', (e) => {
+    const grid = e.target.closest('.member-badge-grid');
+    if (!grid) return;
+    const max = grid.scrollWidth - grid.clientWidth;
+    if (max <= 0) return;
+    const rect = grid.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    grid.scrollLeft = ratio * max;
+  }, { passive: true });
+}
