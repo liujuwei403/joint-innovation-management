@@ -54,24 +54,40 @@
 
   /* ─── 全员勋章 member cards ─── */
   .member-badge-grid {
-    display: flex; flex-wrap: wrap; gap: 10px;
-    padding: 4px 0; overflow: visible; position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 44px 4px 16px;
+    position: relative;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) transparent;
   }
+  .member-badge-grid::-webkit-scrollbar { height: 6px; }
+  .member-badge-grid::-webkit-scrollbar-track { background: transparent; }
+  .member-badge-grid::-webkit-scrollbar-thumb {
+    background: var(--glass-border); border-radius: 3px;
+  }
+  .member-badge-grid::-webkit-scrollbar-thumb:hover { background: var(--accent); }
   .member-badge-grid .badge-card {
+    flex: 0 0 auto;
     transform: scale(0.52);
-    transform-origin: top left;
+    transform-origin: center center;
     width: 160px;
-    margin-right: -76px;
-    margin-bottom: -70px;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    margin: 0 -38px;
+    transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94),
+                margin 0.35s cubic-bezier(0.25,0.46,0.45,0.94),
+                box-shadow 0.35s ease;
     z-index: 1;
     cursor: pointer;
   }
   .member-badge-grid .badge-card:hover {
-    transform: scale(1.02) translateY(-8px);
+    transform: scale(1.05);
+    margin: 0 24px;
     z-index: 100;
     box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 60px var(--badge-glow, var(--accent-glow));
-    overflow: visible;
   }
   .member-badge-grid .badge-card .badge-name {
     font-size: 13px;
@@ -93,13 +109,14 @@
   @media (max-width: 640px) {
     .badge-grid { grid-template-columns: repeat(2, 1fr); }
     .page-title { font-size: 22px; }
+    .member-badge-grid { padding: 36px 4px 12px; }
     .member-badge-grid .badge-card {
       transform: scale(0.45);
-      margin-right: -86px;
-      margin-bottom: -80px;
+      margin: 0 -44px;
     }
     .member-badge-grid .badge-card:hover {
-      transform: scale(0.9) translateY(-4px);
+      transform: scale(0.95);
+      margin: 0 16px;
     }
   }
 </style>
@@ -359,6 +376,20 @@ function sortAllMembers(sortBy, el) {
 
   document.getElementById('all-members-content').innerHTML = html;
 }
+
+(function bindMemberGridScroll() {
+  const host = document.getElementById('all-members-content');
+  if (!host) return;
+  host.addEventListener('mousemove', (e) => {
+    const grid = e.target.closest('.member-badge-grid');
+    if (!grid) return;
+    const max = grid.scrollWidth - grid.clientWidth;
+    if (max <= 0) return;
+    const rect = grid.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    grid.scrollLeft = ratio * max;
+  }, { passive: true });
+})();
 </script>
 </div><!-- /main-area -->
 </div><!-- /app-shell -->
